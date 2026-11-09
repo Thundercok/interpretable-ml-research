@@ -143,20 +143,22 @@ def main() -> None:
             # 3. Live Agenda Query
             if any(k in query.lower() for k in ["hôm nay", "hom nay", "chiều nay", "chieu nay", "sáng nay", "sang nay", "lịch học", "lich hoc"]):
                 try:
+                    from rat.config import config
                     from rat.timetable.compositor import TimetableCompositor
                     from rat.timetable.data import load_club_members
                     comp = TimetableCompositor()
                     members = load_club_members()
-                    huy = next((m for m in members if "Huy" in m.name), members[0])
-                    agenda = comp.get_today_agenda(huy)
+                    profile_name = (config.default_member_name or "").strip().lower()
+                    active_member = next((m for m in members if profile_name in m.name.lower()), members[0])
+                    agenda = comp.get_today_agenda(active_member)
                     if agenda:
-                        print(f"⚡ Hôm nay ({huy.name}) có {len(agenda)} ca học:")
+                        print(f"⚡ Hôm nay ({active_member.name}) có {len(agenda)} ca học:")
                         for item in agenda:
                             s = item["session"]
                             deg = "[ThS]" if s.degree_level == "master" else "[ĐH]"
                             print(f"  • {item['badge']} [{item['start_time']} - {item['end_time']}] {deg} {s.course_name} (Phòng {s.room}) — {item['countdown']}")
                     else:
-                        print(f"⚡ Hôm nay ({huy.name}) không có ca học nào trên TKB. Hoàn toàn rảnh!")
+                        print(f"⚡ Hôm nay ({active_member.name}) không có ca học nào trên TKB. Hoàn toàn rảnh!")
                     return
                 except Exception as e:
                     logger.debug(f"CLI agenda error: {e}")

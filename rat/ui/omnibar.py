@@ -1470,8 +1470,10 @@ class OmnibarWindow(QMainWindow):
         self._toast_timer.timeout.connect(self._restore_toast)
         self._toast_restore: Optional[tuple[str, str, str]] = None
 
-        # Huy is default member
-        self.current_member = next((m for m in self.members if "Huy" in m.name), self.members[0])
+        # Active default member from config
+        from rat.config import config
+        p_name = (config.default_member_name or "").strip().lower()
+        self.current_member = next((m for m in self.members if p_name in m.name.lower()), self.members[0])
 
         self.search_timer = QTimer(self)
         self.search_timer.setSingleShot(True)

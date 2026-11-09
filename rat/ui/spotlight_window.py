@@ -532,23 +532,25 @@ class SpotlightWindow(QMainWindow):
             agenda_kw = ["hôm nay", "hom nay", "chiều nay", "chieu nay", "sáng nay", "sang nay", "tối nay", "toi nay", "tiết sau", "tiet sau", "lịch học", "lich hoc", "ai rảnh", "ai ranh"]
             if any(k in q_lower for k in agenda_kw):
                 try:
+                    from rat.config import config
                     from rat.timetable.compositor import TimetableCompositor
                     from rat.timetable.data import load_club_members
                     comp = TimetableCompositor()
                     members = load_club_members()
-                    huy = next((m for m in members if "Huy" in m.name), members[0])
-                    agenda = comp.get_today_agenda(huy)
+                    p_name = (config.default_member_name or "").strip().lower()
+                    target_member = next((m for m in members if p_name in m.name.lower()), members[0])
+                    agenda = comp.get_today_agenda(target_member)
                     c_count = len(agenda)
                     if c_count > 0:
                         first_c = agenda[0]
                         first_s = first_c["session"]
                         deg = "[ThS]" if first_s.degree_level == "master" else "[ĐH]"
-                        ag_snip = f"Hôm nay ({huy.name}) có {c_count} ca học: [{first_c['start_time']} - {first_c['end_time']}] {deg} {first_s.course_name} (Phòng {first_s.room}) • {first_c['countdown']}"
+                        ag_snip = f"Hôm nay ({target_member.name}) có {c_count} ca học: [{first_c['start_time']} - {first_c['end_time']}] {deg} {first_s.course_name} (Phòng {first_s.room}) • {first_c['countdown']}"
                     else:
-                        ag_snip = f"Hôm nay ({huy.name}) không có ca học nào trên TKB. Bạn đang hoàn toàn rảnh!"
+                        ag_snip = f"Hôm nay ({target_member.name}) không có ca học nào trên TKB. Bạn đang hoàn toàn rảnh!"
                     ag_item = SearchResultItem(
                         file_path="rat://claude_widget",
-                        file_name=f"⚡ Lịch học hôm nay: {c_count} ca học ({huy.name})",
+                        file_name=f"⚡ Lịch học hôm nay: {c_count} ca học ({target_member.name})",
                         file_ext=".app",
                         file_size=0,
                         modified_at=time.time(),

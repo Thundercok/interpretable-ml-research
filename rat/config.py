@@ -108,6 +108,7 @@ class Config:
         self.use_slm: bool = True
         self.auto_watch: bool = True
         self.max_results: int = 15
+        self.default_member_name: str = os.getenv("RAT_PROFILE_NAME", "Huy")
         self.global_hotkey: str = os.getenv("RAT_HOTKEY", "<cmd>+<shift>+<space>")
         self.first_run_completed: bool = False
         self.launch_at_login: bool = False
@@ -163,6 +164,8 @@ class Config:
                         self.auto_watch = data["auto_watch"]
                     if "max_results" in data:
                         self.max_results = data["max_results"]
+                    if "default_member_name" in data and isinstance(data["default_member_name"], str):
+                        self.default_member_name = data["default_member_name"]
                     if "global_hotkey" in data:
                         self.global_hotkey = data["global_hotkey"]
                     if "first_run_completed" in data:
@@ -194,6 +197,7 @@ class Config:
             "document_model_preload": self.document_model_preload,
             "auto_watch": self.auto_watch,
             "max_results": self.max_results,
+            "default_member_name": self.default_member_name,
             "global_hotkey": self.global_hotkey,
             "memory_sentinel_enabled": self.memory_sentinel_enabled,
             "deep_idle_timeout_seconds": self.deep_idle_timeout_seconds,
