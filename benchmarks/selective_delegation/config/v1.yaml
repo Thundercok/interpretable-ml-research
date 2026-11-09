@@ -1,0 +1,26 @@
+dataset:
+  name: gsm8k
+  split: test
+  sample_size: 20
+  seed: 42
+  source_url: https://raw.githubusercontent.com/openai/grade-school-math/master/grade_school_math/data/test.jsonl
+
+local:
+  provider: ollama
+  model: qwen3:4b-instruct
+  base_url: http://localhost:11434
+  timeout_seconds: 180
+  max_tokens: 1024
+  temperature: 0.0
+
+cloud:
+  provider: gemini
+  model: gemini-2.5-flash
+  enabled: false
+  timeout_seconds: 90
+  max_tokens: 2048
+
+run:
+  strategy: local_only
+  output: results/gsm8k_smoke_local.jsonl
+  limit: 20
