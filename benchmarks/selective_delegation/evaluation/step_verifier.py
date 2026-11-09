@@ -6,8 +6,18 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
-from benchmarks.selective_delegation.strategies.local_only import extract_numeric_answer
 from rat.engine.verification import evaluate_expression
+
+
+def extract_numeric_answer(text: str) -> str | None:
+    if not text:
+        return None
+    matches = re.findall(r"####\s*([-+]?(?:\d[\d,]*(?:\.\d+)?|\.\d+))", text)
+    if matches:
+        return matches[-1].replace(",", "").rstrip(".")
+    # Fallback is intentionally conservative: use the last standalone numeric token.
+    matches = re.findall(r"(?<!\w)[-+]?(?:\d[\d,]*(?:\.\d+)?|\.\d+)(?!\w)", text)
+    return matches[-1].replace(",", "").rstrip(".") if matches else None
 
 
 @dataclass
