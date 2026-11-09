@@ -24,3 +24,8 @@ dist/
 rat/assets/translation/*/model/
 rat/assets/translation/*/sentencepiece.model
 rat/assets/embedding/models--*/
+
+# Benchmark data and generated runs
+data/
+results/*.jsonl
+

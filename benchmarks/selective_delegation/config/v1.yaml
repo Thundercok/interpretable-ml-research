@@ -16,11 +16,10 @@ local:
 cloud:
   provider: gemini
   model: gemini-2.5-flash
-  enabled: false
   timeout_seconds: 90
   max_tokens: 2048
+  temperature: 0.0
 
 run:
-  strategy: local_only
-  output: results/gsm8k_smoke_local.jsonl
+  strategy: b0
   limit: 20
