@@ -490,7 +490,10 @@ class SpotlightWindow(QMainWindow):
 
             if calc_expr:
                 try:
-                    from reasoning_strategies import safe_calculate
+                    try:
+                        from rat.engine.meta_reasoner import safe_calculate
+                    except ImportError:
+                        from reasoning_strategies import safe_calculate
                     res_str = safe_calculate(calc_expr)
                     if res_str and "Lỗi" not in res_str and res_str != "None":
                         calc_item = SearchResultItem(
