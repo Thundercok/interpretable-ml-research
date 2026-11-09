@@ -22,13 +22,17 @@ def cli_main() -> None:
     run_cli()
 
 
-def run_resident_app(mode: str = "finder") -> None:
+def run_resident_app(mode: str = "finder", *, reasoning_engine=None, allow_synthetic_policy=False) -> None:
     # Qt and resident services are needed only for a GUI launch. Install the
     # GUI exception hooks before importing or constructing Qt components.
     from rat.os.crash_shield import install_crash_shield
     install_crash_shield()
     from rat.os.app import run_resident_app as launch
-    launch(mode=mode)
+    if reasoning_engine is None:
+        launch(mode=mode)
+    else:
+        launch(mode=mode, reasoning_engine=reasoning_engine,
+               allow_synthetic_policy=allow_synthetic_policy)
 
 
 def main() -> None:
@@ -43,6 +47,9 @@ def main() -> None:
         elif cmd.lower().endswith(".pdf"):
             from rat.ui.quick_app import main as quick_pdf_main
             raise SystemExit(quick_pdf_main(sys.argv[1:]))
+        elif cmd in ("lab", "reasoning-lab"):
+            from rat.ui.reasoning_lab import main as lab_main
+            raise SystemExit(lab_main())
         elif cmd in ("astrology", "natal", "la-so"):
             from rat.os.crash_shield import install_crash_shield
             install_crash_shield()
@@ -158,13 +165,9 @@ def main() -> None:
             cli_main()
             return
 
-    # Flags such as --document and --dark belong to the one-window desk, like an explicit PDF path.
-    if len(sys.argv) > 1:
-        from rat.ui.quick_app import main as quick_main
-        raise SystemExit(quick_main(sys.argv[1:]))
-
-    # Primary unified entry point: run the resident app (menu bar, global hotkey, desk)
-    run_resident_app(mode="desk")
+    # Primary unified entry point: summon unified RAT Qt Quick Desk
+    from rat.ui.quick_app import main as quick_main
+    raise SystemExit(quick_main(sys.argv[1:]))
 
 
 if __name__ == "__main__":

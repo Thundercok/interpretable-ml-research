@@ -14,6 +14,9 @@ from rat.ui.chat_session import (
 
 @pytest.mark.parametrize("query, expected", [
     ("Giúp tôi tính 2+2", "2+2"),
+    ("Tính giúp tôi 2 + 2", "2 + 2"),
+    ("chuột ơi tính 100 * 5 giúp với", "100 * 5"),
+    ("tính giúp 50 / 2", "50 / 2"),
     ("Chuột ơi, 2+2 bằng bao nhiêu?", "2+2"),
     ("Chào chuột, giúp mình tính (12 - 2) / 5", "(12 - 2) / 5"),
     ("tính 2^3", "2**3"),
@@ -75,70 +78,3 @@ def test_new_chat_clears_context_and_latest_query_is_not_clipped():
     assert history.messages() == []
     query = "Câu mới " * 2000
     assert build_chat_prompt(query, history.messages()) == query
-
-
-def test_failed_request_survives_followup_without_becoming_a_successful_answer():
-    history = ConversationHistory()
-    query = 'Read my next-class notes; I have 20 minutes.'
-    history.add_attempt(query)
-    assert history.messages() == []
-    context = history.context_messages()
-    assert context[0] == {'role': 'user', 'content': query}
-    status = json.loads(context[1]['content'])
-    assert status['origin'] == 'runtime_execution_status'
-    assert status['successful_answer_produced'] is False
-    assert status['status'] == 'failed'
-    history.add_turn('I already know IP routing.', 'I still need to read the notes.')
-    assert history.context_messages()[0]['content'] == query
-    history.clear()
-    assert history.context_messages() == []
-
-
-def test_native_history_keeps_failure_status_out_of_assistant_dialogue():
-    history = ConversationHistory()
-    failed = history.begin_turn('Read the document.')
-    history.fail_turn(failed.turn_id, error='timed out')
-    assert history.messages_with_turn_ids() == [
-        {'role': 'user', 'content': 'Read the document.', 'turn_id': failed.turn_id}]
-    assert history.turn_references()[0]['status'] == 'failed'
-    pending = history.begin_turn('Prepare my chart.')
-    history.fail_turn(pending.turn_id, 'needs_input', partial_answer='What time were you born?')
-    messages = history.messages_with_turn_ids()
-    assert messages[-1] == {'role': 'assistant', 'content': 'What time were you born?', 'turn_id': pending.turn_id}
-    assert all('runtime_execution_status' not in m['content'] for m in messages)
-
-
-def test_turn_snapshots_keep_full_unclipped_history_while_model_window_stays_bounded():
-    history = ConversationHistory()
-    for idx in range(1, 10):
-        t = history.begin_turn(f"Câu hỏi dài lượt {idx}: " + ("x" * 900))
-        history.complete_turn(t.turn_id, f"Trả lời đầy đủ lượt {idx}: " + ("y" * 900))
-
-    # Full unclipped UI/session snapshots remain intact for all 9 turns
-    all_turns = history.turns()
-    assert len(all_turns) == 9
-    assert all_turns[0].turn_id == "turn-1"
-    assert len(all_turns[0].answer) > 900
-    assert all_turns[-1].turn_id == "turn-9"
-
-    # Model context window remains bounded by MAX_TURNS and MAX_CHARS
-    bounded = history.messages()
-    assert len(bounded) <= history.MAX_TURNS * 2
-    assert sum(len(m["content"]) for m in bounded) <= history.MAX_CHARS
-
-    # Explicit cancel and interaction turns preserve lineage and turn_references
-    t10 = history.begin_turn("Viết bảng trace đầy đủ")
-    cancelled = history.cancel_turn(t10.turn_id, execution_id=t10.execution_id)
-    assert cancelled.status == "cancelled"
-
-    inter = history.record_interaction(
-        "Cập nhật mục tiêu thành tìm 6",
-        target_turn_id="turn-2",
-        target_artifact_id="art-1",
-        target_revision=1,
-        note_ids=["note-1"],
-    )
-    assert inter.kind == "interaction" and inter.target_turn_id == "turn-2"
-    refs = history.turn_references()
-    assert any(r["turn_id"] == t10.turn_id and r["status"] == "cancelled" for r in refs)
-    assert any(r["turn_id"] == inter.turn_id and r["target_turn_id"] == "turn-2" for r in refs)

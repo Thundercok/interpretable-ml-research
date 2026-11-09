@@ -45,12 +45,7 @@ def image_from_bytes(raw, origin='dropped_image'):
 
 def image_from_url(value, origin='dropped_file'):
     # A QVariantList from Qt can contain QUrl, not just its string form.
-    if isinstance(value, QUrl):
-        url = value
-    elif isinstance(value, Path) or (isinstance(value, str) and not value.startswith(('http://', 'https://', 'file://'))):
-        url = QUrl.fromLocalFile(str(value))
-    else:
-        url = QUrl(str(value))
+    url = QUrl(value) if isinstance(value, QUrl) else QUrl(str(value))
     if not url.isLocalFile() or url.host() not in ('', 'localhost'):
         if url.scheme() in ('http', 'https'):
             raise ValueError('Hãy thả dữ liệu ảnh hoặc file ảnh, không phải đường dẫn web.')

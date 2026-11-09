@@ -22,7 +22,6 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 from rat.kernel.profile import MAIN_PROFILE, resolve_profile
 
-from rat.engine.untrusted_gate import UntrustedContentGate
 from rat.engine.agent_types import (  # noqa: F401  (re-exported)
     AgentResponse,
     AgentStep,
@@ -37,7 +36,7 @@ from rat.engine.model_protocol import (
     operation_planning_schema,
     plan_task,
 )
-from rat.engine.runtime_tools import calculate, get_schedule, inspect_archive, search_documents, search_filesystem_live
+from rat.engine.runtime_tools import calculate, get_schedule, search_documents
 
 from rat.engine.controller import (
     AgentStateTracker,
@@ -233,8 +232,6 @@ class AssistantRuntime:
         return search_documents(self.db, query, limit)
 
     tool_calculate = staticmethod(calculate)
-    tool_inspect_archive = staticmethod(inspect_archive)
-    tool_search_filesystem_live = staticmethod(search_filesystem_live)
 
     def execute_tool(
         self,
@@ -303,8 +300,8 @@ class AssistantRuntime:
         try:
             client = self.model_client
             if client is None:
-                from rat.engine.slm import assistant_engine
-                client = assistant_engine()
+                from rat.engine.slm import slm_engine
+                client = slm_engine
             messages = self._native_messages(goal, trajectory, **context)
             tool_defs = self.registry.to_tool_definitions()
             snapshot = context.get('context_snapshot')
@@ -323,7 +320,7 @@ class AssistantRuntime:
                     # extra discovery round trip or user-text routing.
                     selected.update({'read_document', 'search_book_pages',
                                      'read_book_page', 'deliver_document', 'synthesize_smart_note',
-                                     'find_file_or_app', 'reveal_in_finder', 'open_document'})
+                                     'find_file_or_app', 'reveal_in_finder'})
                     if self.artifact_store.find_by_kind('structured_note'):
                         selected.update({'update_note_action_item', 'expand_note_section'})
                 if snapshot and snapshot['observed_state']['lifecycle'].get('pending_input'):
@@ -415,11 +412,6 @@ class AssistantRuntime:
             execution_id=active_exec_id,
             generation=notes_generation,
         )
-        gate = UntrustedContentGate(goal, selected_document_path=selected_document_path,
-                                    previous_sources=previous_sources)
-        for prior in initial_steps or []:
-            if prior.tool_name:
-                gate.observe(prior.tool_name)
         def bind_contract(proposal, proposed_by):
             try:
                 if isinstance(proposal, TurnContract):
@@ -531,7 +523,6 @@ class AssistantRuntime:
             }
             self.enable_observation_pack = orig_obs_pack
             telemetry = {
-                "blocked_actions": list(gate.blocked),
                 "prompt_tokens": total_prompt,
                 "completion_tokens": total_completion,
                 "total_tokens": total_prompt + total_completion,
@@ -759,27 +750,7 @@ class AssistantRuntime:
                     pending_calls.clear()
                     emit(on_progress, "Đang hoàn tất phần việc còn thiếu…")
                     continue
-
-                final_ans = decision.final_answer
-                from rat.engine.language_check import is_mainly_cjk, is_vietnamese, reads_as_english
-                english = bool(final_ans) and reads_as_english(final_ans)
-                if final_ans and is_vietnamese(goal) and (is_mainly_cjk(final_ans) or english):
-                    retry_context = dict(context)
-                    retry_context["finish_only"] = True
-                    retry_inst = "Câu trả lời trước không viết bằng tiếng Việt. Hãy viết lại toàn bộ bằng tiếng Việt, chỉ dùng thông tin đã có."
-                    retry_decision = self._call_model(
-                        f"{goal}\n\n[Yêu cầu bắt buộc: {retry_inst}]",
-                        trajectory,
-                        **retry_context,
-                    )
-                    if retry_decision.final_answer and not is_mainly_cjk(retry_decision.final_answer):
-                        final_ans = retry_decision.final_answer
-                    elif not english:
-                        step.thought = "Mô hình không trả lời bằng tiếng Việt như yêu cầu sau khi thử lại."
-                        step.error = "language_mismatch"
-                        return response(error="language_mismatch")
-
-                return response(answer=final_ans)
+                return response(answer=decision.final_answer)
             if finish_only:
                 step.error = "controller_finish_refused"
                 trajectory.append(step)
@@ -854,7 +825,7 @@ class AssistantRuntime:
             step_note_cursor = self.notebook.event_cursor()
             step_starting_revisions = {a.id: a.revision for a in self.artifact_store.list()}
             try:
-                result = gate.check(name, args) or self.execute_tool(
+                result = self.execute_tool(
                     name,
                     args,
                     member_id=member_id,
@@ -871,7 +842,6 @@ class AssistantRuntime:
                 result = {"error": str(exc)}
             duration = (time.perf_counter() - tool_started) * 1000
             tool_time += duration
-            gate.observe(name)
             step.tool_name, step.tool_args, step.tool_result = name, args, result
             step.note_events = self.notebook.events_since(step_note_cursor, self.notebook.conversation_id)
             v_tick = time.perf_counter()

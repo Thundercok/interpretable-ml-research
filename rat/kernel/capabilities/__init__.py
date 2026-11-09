@@ -30,6 +30,7 @@ def build_core_registry(
     from rat.kernel.capabilities.finder import create_finder_capability
     from rat.kernel.capabilities.result_tables import create_result_tables_capability
     from rat.kernel.capabilities.smart_notes import create_smart_notes_capability
+    from rat.kernel.capabilities.code_review import create_code_review_capability
     from rat.kernel.capabilities.translation import create_translation_capability
     from rat.kernel.capabilities.web import create_web_capability
     from rat.engine.snippet_translation import SnippetTranslator
@@ -41,6 +42,7 @@ def build_core_registry(
     registry.register_capability(create_finder_capability(db=db))
     registry.register_capability(create_result_tables_capability())
     registry.register_capability(create_smart_notes_capability())
+    registry.register_capability(create_code_review_capability())
     registry.register_capability(create_translation_capability(SnippetTranslator()))
 
     if enable_web:

@@ -328,6 +328,79 @@ def cmd_stats() -> None:
     ))
 
 
+def cmd_review(
+    target: Optional[str] = None,
+    staged: bool = False,
+    repo: Optional[str] = None,
+    submit: bool = False,
+    repo_path: Optional[str] = None,
+) -> None:
+    """Run automated multi-lens code review on local diff or GitHub Pull Request."""
+    from rat.kernel.capabilities.code_review import create_code_review_capability
+    cap = create_code_review_capability()
+
+    if target:
+        console.print(Panel.fit(f"[bold cyan]🐀 RAT Code Review — GitHub PR {target}[/bold cyan]", border_style="cyan"))
+        try:
+            res = cap.operations["review_github_pr"].handler({
+                "pr_target": target,
+                "repo": repo,
+                "submit": submit,
+            })
+        except Exception as e:
+            console.print(f"[bold red]Lỗi khi đánh giá PR:[/bold red] {e}")
+            return
+    else:
+        scope = "staged (--cached)" if staged else "working tree (unstaged)"
+        console.print(Panel.fit(f"[bold cyan]🐀 RAT Code Review — Local Diff ({scope})[/bold cyan]", border_style="cyan"))
+        try:
+            res = cap.operations["review_local_diff"].handler({
+                "staged": staged,
+                "repo_path": repo_path,
+            })
+        except Exception as e:
+            console.print(f"[bold red]Lỗi khi đọc diff local:[/bold red] {e}")
+            return
+
+    verdict = res.get("verdict", "UNKNOWN")
+    verdict_badge = {
+        "APPROVED": "[bold green]✅ APPROVED[/bold green]",
+        "COMMENT_WITH_SUGGESTIONS": "[bold yellow]💬 COMMENT WITH SUGGESTIONS[/bold yellow]",
+        "CHANGES_REQUESTED": "[bold red]🚨 CHANGES REQUESTED[/bold red]",
+    }.get(verdict, f"[bold white]{verdict}[/bold white]")
+
+    console.print(f"\n[bold]Kết quả:[/bold] {verdict_badge}")
+    console.print(f"[dim]{res.get('summary', '')}[/dim]\n")
+
+    findings = res.get("findings", [])
+    if not findings:
+        console.print("[green]🎉 Không phát hiện lỗi cú pháp, thiếu import, hay vi phạm bất biến nào.[/green]")
+    else:
+        table = Table(title=f"Danh sách phát hiện ({len(findings)})", border_style="dim")
+        table.add_column("Mức độ", style="bold", width=12)
+        table.add_column("Ống kính", width=14)
+        table.add_column("Vị trí", style="cyan", width=25)
+        table.add_column("Mô tả / Đề xuất sửa", style="white")
+
+        for f in findings:
+            sev = f.get("severity", "")
+            sev_fmt = (
+                "[red]CRITICAL[/red]" if sev == "CRITICAL"
+                else "[yellow]WARNING[/yellow]" if sev == "WARNING"
+                else "[blue]SUGGEST[/blue]"
+            )
+            loc = f"{f.get('file_path')}:{f.get('line_number') or '?'}"
+            desc = f"[bold]{f.get('title')}[/bold]\n{f.get('description')}"
+            if f.get("suggested_fix"):
+                desc += f"\n[green]Gợi ý:[/green] [dim]{f.get('suggested_fix')}[/dim]"
+            table.add_row(sev_fmt, f.get("lens", ""), loc, desc)
+
+        console.print(table)
+
+    if res.get("submitted"):
+        console.print(f"\n[bold green]✓ Đã gửi nhận xét lên GitHub PR thành công![/bold green]")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="rat — Smart Local File Finder with Context Engineering & SLM")
     subparsers = parser.add_subparsers(dest="command")
@@ -362,6 +435,13 @@ def main() -> None:
     # Status command
     subparsers.add_parser("status", help="Show index statistics")
 
+    # Review command
+    review_parser = subparsers.add_parser("review", help="Automated multi-lens code review on local diff or GitHub PR")
+    review_parser.add_argument("target", nargs="?", default=None, help="Optional GitHub PR number, URL, or owner/repo#pr")
+    review_parser.add_argument("--staged", action="store_true", help="Review staged changes instead of unstaged diff")
+    review_parser.add_argument("--repo", default=None, help="GitHub repo (e.g. owner/repo) if reviewing remote PR")
+    review_parser.add_argument("--submit", action="store_true", help="Submit review comment to GitHub PR via gh CLI")
+
     args = parser.parse_args()
 
     if args.command == "index":
@@ -377,6 +457,8 @@ def main() -> None:
         cmd_dedup()
     elif args.command == "status":
         cmd_stats()
+    elif args.command == "review":
+        cmd_review(args.target, staged=args.staged, repo=args.repo, submit=args.submit)
     else:
         parser.print_help()
 

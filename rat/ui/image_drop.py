@@ -30,13 +30,11 @@ class ImageDropFilter(QObject):
             logger.warning('image_drop_adapter_failed kind=%s', type(exc).__name__)
             if event.type() == QEvent.Type.Drop:
                 self._diagnostic('adapter_error', error_class=type(exc).__name__)
-            if hasattr(self.controller, 'setDropActive'):
-                self.controller.setDropActive(False)
+            self.controller.setDropActive(False)
             if event.type() in (QEvent.Type.DragEnter, QEvent.Type.DragMove, QEvent.Type.Drop):
                 event.ignore()
                 if event.type() == QEvent.Type.Drop:
-                    if hasattr(self.controller, 'image_input_error'):
-                        self.controller.image_input_error('Chưa nhận được ảnh. Hãy chờ ảnh lưu rồi thả lại file PNG.')
+                    self.controller.image_input_error('Chưa nhận được ảnh. Hãy chờ ảnh lưu rồi thả lại file PNG.')
                 return True
             return False
 
@@ -46,33 +44,30 @@ class ImageDropFilter(QObject):
             register_file_promises(self.view)
             return False
         if kind == QEvent.Type.DragLeave:
-            if hasattr(self.controller, 'setDropActive'):
-                self.controller.setDropActive(False)
+            self.controller.setDropActive(False)
             return True
         if kind not in (QEvent.Type.DragEnter, QEvent.Type.DragMove, QEvent.Type.Drop):
             return False
         root = self.view.rootObject()
-        if root is None or not (event.possibleActions() & Qt.DropAction.CopyAction):
-            if hasattr(self.controller, 'setDropActive'):
-                self.controller.setDropActive(False)
+        if root is None or not root.property('imageDropEnabled') or not event.possibleActions() & Qt.DropAction.CopyAction:
+            self.controller.setDropActive(False)
             event.ignore()
             return True
         mime = event.mimeData()
         if kind != QEvent.Type.Drop:
             accepted = (mime.hasUrls() or mime.hasImage() or any(mime.hasFormat(f) for f in ENCODED_IMAGE_TYPES)
-                or (kind == QEvent.Type.DragEnter and bool(drag_file_promises())))
-            if hasattr(self.controller, 'setDropActive'):
-                self.controller.setDropActive(bool(accepted))
+                or (kind == QEvent.Type.DragEnter and bool(drag_file_promises()))
+                or bool(self.controller.snapshot['dropActive']))
+            self.controller.setDropActive(bool(accepted))
             if accepted:
                 event.setDropAction(Qt.DropAction.CopyAction)
                 event.accept()
             else:
                 event.ignore()
             return True
-        if hasattr(self.controller, 'setDropActive'):
-            self.controller.setDropActive(False)
-        self.receipt = {'drop_id': uuid4().hex, 'app_version': self.view.title(), 'received_at': time.time()}
-        instruction = root.property('draftText') or '' if root else ''
+        self.controller.setDropActive(False)
+        self.receipt = {'drop_id':uuid4().hex, 'app_version':self.view.title(), 'received_at':time.time()}
+        instruction = root.property('draftText') or ''
         self._diagnostic('received', has_image=bool(mime.hasImage()), url_count=len(mime.urls()),
             encoded_image_formats=[f for f in ENCODED_IMAGE_TYPES if mime.hasFormat(f)])
         logger.info('image_drop_received has_image=%s url_count=%s encoded_image=%s',
@@ -88,11 +83,10 @@ class ImageDropFilter(QObject):
             logger.info('image_drop_fallback promise_count=%s', len(receivers))
             if not receivers:
                 self._diagnostic('rejected', reason='no_readable_image_or_promise', promise_count=0)
-                if hasattr(self.controller, 'image_input_error'):
-                    self.controller.image_input_error(str(exc))
+                self.controller.image_input_error(str(exc))
                 event.ignore()
                 return True
-            token = self.controller.beginImageReceive() if hasattr(self.controller, 'beginImageReceive') else None
+            token = self.controller.beginImageReceive()
             if token is None:
                 event.ignore()
                 return True
@@ -100,56 +94,46 @@ class ImageDropFilter(QObject):
                 event.setDropAction(Qt.DropAction.CopyAction)
                 event.accept()
                 self._diagnostic('awaiting_file', promise_count=len(receivers))
-                if hasattr(self.controller, 'engagementRequested'):
-                    self.controller.engagementRequested.emit()
+                self.controller.engagementRequested.emit()  # explicit drop only; never a late promise callback
                 self.promises.receive(receivers,
                     lambda path: self._promised_image(token, path, instruction),
                     lambda message: self._promise_error(token, message))
             except Exception as error:
                 self._diagnostic('promise_start_failed', error_class=type(error).__name__)
                 message = str(error) if isinstance(error, ValueError) else 'Chưa nhận được ảnh thu nhỏ. Hãy chờ ảnh lưu rồi thả lại.'
-                if hasattr(self.controller, 'finishImageReceive'):
-                    self.controller.finishImageReceive(token, error=message)
+                self.controller.finishImageReceive(token, error=message)
                 event.ignore()
                 return True
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
             return True
-        if hasattr(self.controller, 'acceptDroppedImage'):
-            if self.controller.acceptDroppedImage(image, label, instruction):
-                self._diagnostic('accepted_ingress', route=image.origin, byte_count=len(image.content))
-                if hasattr(self.controller, 'engagementRequested'):
-                    self.controller.engagementRequested.emit()
-                event.setDropAction(Qt.DropAction.CopyAction)
-                event.accept()
-            else:
-                event.ignore()
+        if self.controller.acceptDroppedImage(image, label, instruction):
+            self._diagnostic('accepted_ingress', route=image.origin, byte_count=len(image.content))
+            self.controller.engagementRequested.emit()
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
         else:
             event.ignore()
         return True
 
     def _promised_image(self, token, path, instruction):
-        if hasattr(self.controller, 'isImageReceiveCurrent') and not self.controller.isImageReceiveCurrent(token):
+        if not self.controller.isImageReceiveCurrent(token):
             return
         try:
             image, label = image_from_url(QUrl.fromLocalFile(str(path)), origin='dropped_image')
             self._diagnostic('accepted_ingress', route='file_promise', byte_count=len(image.content))
-            if hasattr(self.controller, 'finishImageReceive'):
-                self.controller.finishImageReceive(token, image=image, label=label, instruction=instruction)
-            elif hasattr(self.controller, 'acceptDroppedImage'):
-                self.controller.acceptDroppedImage(image, label, instruction)
+            self.controller.finishImageReceive(token, image=image, label=label, instruction=instruction)
         except ValueError as exc:
             self._diagnostic('promise_image_invalid', error_class=type(exc).__name__)
-            if hasattr(self.controller, 'finishImageReceive'):
-                self.controller.finishImageReceive(token, error=str(exc))
+            self.controller.finishImageReceive(token, error=str(exc))
 
     def _promise_error(self, token, message):
-        if hasattr(self.controller, 'isImageReceiveCurrent') and self.controller.isImageReceiveCurrent(token):
+        if self.controller.isImageReceiveCurrent(token):
             self._diagnostic('promise_failed')
-            if hasattr(self.controller, 'finishImageReceive'):
-                self.controller.finishImageReceive(token, error=message)
+            self.controller.finishImageReceive(token, error=message)
 
     def _diagnostic(self, stage, **values):
+        # One bounded, local receipt. Never include URLs, paths, text or bytes.
         self.receipt.update(stage=stage, **values)
         if self.diagnostic_file is None:
             return

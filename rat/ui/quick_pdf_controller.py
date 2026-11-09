@@ -17,20 +17,26 @@ from xml.parsers.expat import ExpatError
 from uuid import uuid4
 from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import QCoreApplication, QEventLoop, QObject, QTimer, QUrl, Qt, pyqtProperty, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QCoreApplication, QObject, QTimer, QUrl, Qt, pyqtProperty, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QDesktopServices, QGuiApplication
 
 from rat.config import config
 from rat.engine.app_resolver import ApplicationCatalog, revalidate_application_bundle
 from rat.engine.finder_intent import parse_finder_intent
-from rat.engine.goal_routing import FIND, OPEN, TRANSLATE, looks_like_passage
 from rat.engine.progressive_search import ProgressiveSearch, SearchCoordinator, SearchSnapshot
 from rat.engine.semantic_index import shared_index
 from rat.engine.semantic_reranker import SemanticFuzzyReranker
 from rat.engine.selected_pdf import (
     SelectedPDFError, check_current, citation_text, select_pdf,
 )
-from rat.engine.execution import ExecutionRequest, execution_response
+from rat.engine.execution import (
+    CONTEXT_ADAPTER_SCHEMA_VERSION,
+    ExecutionRequest,
+    build_execution_context_snapshot,
+    execution_response,
+    render_backend_input,
+    validate_referenced_context,
+)
 from rat.engine.assistant_runtime import AgentResponse, AssistantRuntime
 from rat.ui.chat_session import ConversationHistory, TurnSnapshot
 from rat.ui.answer_presentation import (
@@ -39,228 +45,26 @@ from rat.ui.answer_presentation import (
 from rat.ui.assistant_worker import create_execution_worker
 from rat.ui.pdf_snapshot_provider import PdfSnapshotRenderer
 from rat.ui.reading_coordinator import ReadingDeskCoordinator
-from rat.ui.translation_card import language_name, translation_card
 from rat.kernel.contracts import Artifact, SourceEvidence
 
 logger = logging.getLogger("rat.ui.quick_pdf_controller")
 
-# Mọi thông báo trên bàn nói bằng giọng Chuột: câu ngắn, nói chuyện gì xảy ra rồi làm gì tiếp, không dùng
-# từ kỹ thuật như "mô hình", "token", "ngân sách". Chi tiết kỹ thuật để ở nhật ký (`_events`).
-SHORTCUT_ACK_HOLD_MS = 4000
-READY_STATUS = "Chuột sẵn sàng. Bạn cần gì?"
-THINKING_STATUS = "Chuột đang nghĩ…"
-ANSWERED_STATUS = "Xong rồi. Hỏi tiếp cứ gõ."
-STOPPED_STATUS = "Chuột dừng rồi."
-STOPPED_KEEPING_DRAFT_STATUS = "Chuột dừng rồi. Chữ bạn đang gõ vẫn còn."
-TIMEOUT_MESSAGE = "Chuột chờ lâu quá mà chưa có trả lời. Thử lại nhé."
-OLLAMA_DOWN_MESSAGE = "Chuột không gọi được Ollama. Xem Ollama đã chạy chưa nhé."
-TURN_STATUS_LABELS = {
-    "in_progress": "Chuột đang làm",
-    "completed": "đã xong",
-    "failed": "chưa xong",
-    "cancelled": "đã dừng",
-    "needs_input": "Chuột cần bạn nói thêm",
-}
-
-
-FINDER_REASON_LABELS = {
-    "Khớp chủ đề ngữ nghĩa (Semantic)": "Khớp theo nghĩa",
-    "Khớp chỉ mục tài liệu": "Khớp tài liệu",
-}
-
-
-def short_folder(display_path: str) -> str:
-    """The last two folders of a path; the file name is already the row title."""
-    parts = [p for p in Path(display_path).parent.parts if p not in ("/", "~")]
-    return " › ".join(parts[-2:]) if parts else "Thư mục nhà"
-
-
-def finder_row_detail(kind: str, match_reason: str, display_path: str) -> str:
-    # The excerpt has its own line, so "Khớp nội dung: …" keeps only the part before the colon.
-    reason = FINDER_REASON_LABELS.get(match_reason, match_reason).split(":", 1)[0]
-    return reason if kind == "application" else f"{reason} · {short_folder(display_path)}"
-
-
-def finder_found_status(count: int, query: str) -> str:
-    return f"Chuột tìm ra {count} thứ cho '{query}'" if count else f"Chuột không tìm ra gì cho '{query}'"
-
-
 ERROR_MESSAGES = {
-    "file_not_found": "Chuột không thấy tệp này nữa. Chọn lại giúp Chuột nhé.",
-    "file_unreadable": "Chuột không mở được tệp này, có thể do quyền đọc. Thử tệp khác nhé.",
-    "not_pdf": "Chỗ này Chuột chỉ nhận PDF.",
-    "pdf_too_large": "PDF này nặng quá, Chuột nhận tối đa 64 MiB. Tách nhỏ rồi đưa lại nhé.",
-    "encrypted_pdf": "PDF này khóa mật khẩu. Mở khóa rồi đưa lại cho Chuột nhé.",
-    "invalid_pdf": "PDF này hỏng nên Chuột không đọc được. Xuất lại rồi thử nhé.",
-    "empty_pdf": "PDF này trống, không có trang nào.",
-    "pdf_engine_unavailable": "Chuột thiếu bộ đọc PDF nên chưa mở được tệp này.",
-    "no_text_page": "Trang này không có chữ để đọc, có thể là trang trắng hoặc ảnh scan. Chuột chưa chạy OCR.",
-    "pdf_changed": "PDF vừa đổi sau khi bạn chọn. Chọn lại để Chuột khỏi đọc nhầm nhé.",
-    "invalid_page": "Tệp này không có trang đó.",
-    "empty_query": "Bạn muốn Chuột tìm từ gì?",
-    "invalid_citation": "Đoạn bạn chọn không khớp với trang Chuột đã đọc. Chọn lại giúp nhé.",
-    "open_failed": "Máy chưa chịu mở PDF gốc. Thử lại nhé.",
+    "file_not_found": "Tệp không còn tồn tại. Hãy chọn lại PDF.",
+    "file_unreadable": "Không đọc được tệp này. Kiểm tra quyền đọc hoặc chọn PDF khác.",
+    "not_pdf": "Hãy chọn một tệp PDF.",
+    "pdf_too_large": "Luồng này nhận PDF tối đa 64 MiB. Hãy chọn một phần tài liệu nhỏ hơn.",
+    "encrypted_pdf": "PDF yêu cầu mật khẩu. Hãy chọn bản đã mở khóa.",
+    "invalid_pdf": "PDF hỏng hoặc không đọc được cấu trúc. Hãy chọn lại hoặc xuất lại PDF.",
+    "empty_pdf": "PDF này không có trang nào.",
+    "pdf_engine_unavailable": "Bộ đọc PDF hoặc thành phần giải mã cần thiết chưa có sẵn.",
+    "no_text_page": "Trang này không có văn bản trích xuất; có thể là trang trắng hoặc scan/ảnh. OCR chưa chạy.",
+    "pdf_changed": "PDF đã thay đổi sau khi chọn. Hãy chọn lại trước khi tìm, đọc hoặc chép trích dẫn.",
+    "invalid_page": "Số trang nằm ngoài tệp PDF đang chọn.",
+    "empty_query": "Hãy nhập từ hoặc cụm từ cần tìm.",
+    "invalid_citation": "Đoạn chọn không khớp văn bản trang đã đọc. Hãy chọn lại đoạn trích.",
+    "open_failed": "Hệ thống chưa nhận yêu cầu mở PDF gốc.",
 }
-
-
-ASSISTANT_ERROR_MESSAGES = {
-    "budget_exceeded": "Việc này dài quá nên Chuột dừng giữa chừng. Thử chia nhỏ câu hỏi nhé.",
-    "timeout": TIMEOUT_MESSAGE,
-    "model_timeout": TIMEOUT_MESSAGE,
-    "unresolved": "Chuột chưa đủ dữ kiện để trả lời câu này.",
-    "cancelled": "Chuột dừng rồi. Bạn cần gì tiếp?",
-    "empty_model_response": "Chuột chưa nghĩ ra chữ nào. Gửi lại nhé.",
-    "language_mismatch": "Chuột lỡ không trả lời bằng tiếng Việt. Gửi lại nhé.",
-    "step_budget_exhausted": "Câu này nhiều bước quá nên Chuột dừng giữa chừng. Thử chia nhỏ nhé.",
-    "token_budget_exhausted": "Câu này dài quá sức Chuột một lượt. Thử chia nhỏ nhé.",
-    "task_plan_failed": "Chuột chưa nghĩ ra cách làm việc này.",
-    "verification_failed": "Chuột đối chiếu lại thấy kết quả không khớp dữ liệu.",
-    "selected_document_read_failed": "Chuột không đọc được tài liệu bạn chọn.",
-    "selected_document_no_text": "Tài liệu bạn chọn không có chữ để Chuột đọc.",
-    "selected_document_context_too_large": "Tài liệu này dài quá, Chuột không đọc hết một lượt được.",
-    "missing_selected_document": "Bạn chưa đưa tài liệu nào cho Chuột.",
-    "live_model_disabled": "Phần trả lời của Chuột đang tắt trong cấu hình.",
-}
-
-
-def describe_execution_error(err: Any) -> str:
-    err_str = str(err or "").strip()
-    if not err_str:
-        return "Chuột chưa làm xong việc này."
-    if err_str in ASSISTANT_ERROR_MESSAGES:
-        return ASSISTANT_ERROR_MESSAGES[err_str]
-    err_low = err_str.lower()
-    if "connection refused" in err_low or "failed to establish a new connection" in err_low or "connection_refused" in err_low:
-        return OLLAMA_DOWN_MESSAGE
-    if "timeout" in err_low or "timed out" in err_low:
-        return TIMEOUT_MESSAGE
-    if err_str.startswith("unknown_tool:"):
-        tool_name = err_str.split(":", 1)[1]
-        return f"Chuột chưa biết dùng công cụ '{tool_name}'."
-    if err_str.startswith("task_plan_failed:"):
-        detail = err_str.split(":", 1)[1]
-        if "connection refused" in detail.lower() or "connection" in detail.lower():
-            return OLLAMA_DOWN_MESSAGE
-        return f"Chuột chưa nghĩ ra cách làm việc này: {detail}"
-    if err_str.startswith("worker_creation_failed:"):
-        return f"Chuột chưa khởi động được: {err_str.split(':', 1)[1]}"
-    if err_str.startswith("reasoning_policy_unavailable:"):
-        return "Chuột chưa sẵn sàng suy luận. Thử lại sau nhé."
-    return f"Chuột chưa làm xong việc này ({err_str})"
-
-
-QUESTION_WORDS = {
-    # English question starters
-    "what", "why", "how", "whom", "whose", "where", "when", "which",
-    "is", "are", "was", "were", "could", "would", "should", "does", "did",
-    # Vietnamese single-word question starters
-    "gì", "nào", "đâu", "mấy",
-}
-
-QUESTION_PREFIXES = (
-    # Vietnamese compound / multi-word question starters
-    "tại sao", "vì sao", "thế nào", "làm sao", "làm thế nào",
-    "ở đâu", "khi nào", "bao giờ", "bao nhiêu", "có phải",
-    "liệu", "hãy", "hỏi", "giải thích", "tóm tắt", "cho mình", "cho tôi",
-    # These words also begin ordinary searches ("AI ethics report", "sao chép file",
-    # "do an tot nghiep", "can thiep"), so they count only in a question shape.
-    "ai là", "ai đã", "ai có", "ai viết", "ai đang", "sao lại", "sao không", "sao vẫn",
-    "do you", "do i", "do we", "can you", "can i", "can we", "who is", "who are", "who wrote",
-    # Instructions for the assistant rather than things to find.
-    "xin chào", "chào chuột", "viết", "tính", "so sánh", "dịch",
-    "explain", "summarize", "compare", "translate", "write",
-)
-
-ARITHMETIC = re.compile(r"(?=.*\d)(?=.*[+\-*/%^×÷=])[\d\s.,+\-*/%^×÷=()]+")
-
-
-def is_question_query(text: str) -> bool:
-    """Treat text as a question if it ends with '?', has >8 words, or starts with a question word."""
-    q = (text or "").strip()
-    if not q:
-        return False
-    if q.endswith(("?", "？")):
-        return True
-    if re.search(r"https?://", q, re.I):
-        return True
-    q_low = q.lower()
-    instant_keywords = (
-        "bói", "boi", "kinh dịch", "kinh dich", "gieo quẻ", "gieo que", "bói quẻ", "boi que", "quẻ dịch", "que dich", "lên quẻ", "len que",
-        "lenormand", "rút bài", "rut bai", "bói bài", "boi bai", "bói lenormand", "boi lenormand",
-        "thời khóa biểu", "thoi khoa bieu", "lịch học", "lich hoc", "tkb", "xem lịch", "xem lich",
-        "hôm nay học gì", "hom nay hoc gi", "mai học gì", "mai hoc gi",
-    )
-    if any(k in q_low for k in instant_keywords):
-        return True
-    words = q.split()
-    if FIND.match(q) or (OPEN.match(q) and len(words) <= 6):
-        return False
-    if ARITHMETIC.fullmatch(q):
-        return True
-    if len(words) > 8:
-        return True
-    return _starts_like_a_question(q)
-
-
-def _starts_like_a_question(q: str) -> bool:
-    words = q.split()
-    first_word = words[0].strip(".,!?:;\"'()[]{}«»“”").lower()
-    if first_word in QUESTION_WORDS:
-        return True
-    q_low = q.lower()
-    for prefix in QUESTION_PREFIXES:
-        if q_low == prefix or q_low.startswith(prefix + " "):
-            return True
-    return False
-
-
-APP_REQUEST = re.compile(r"^(?:app|apps|application|ứng dụng|ung dung|phần mềm|phan mem)\b", re.I)
-
-
-def offers_find_or_translate(text: str) -> bool:
-    """A foreign sentence too short to be surely a passage: it could be text to translate or a file to find.
-
-    Language detection reads unaccented Vietnamese as Indonesian, French or Czech, and English file
-    names read as English, so word count alone is not enough. It takes closing punctuation, or nine
-    words of English. Measured 2026-11-04: asks on 7 of 8 sentences, on 0 of 28 searches and questions,
-    and on 0 of the 23 draft queries in `~/.rat/search_quality.json`.
-    """
-    q = (text or "").strip()
-    words = q.split()
-    if len(words) < 4 or "\n" in q or looks_like_passage(q):
-        return False
-    if FIND.match(q) or OPEN.match(q) or TRANSLATE.match(q) or re.search(r"[/\\]|\.\w{2,4}$", q):
-        return False
-    if q.endswith(("?", "？")) or _starts_like_a_question(q):
-        return False
-    from rat.engine.snippet_translation import detect_language
-    language = detect_language(q)
-    if language in (None, "vi"):
-        return False
-    return q[-1] in ".!" or (len(words) >= 9 and language == "en")
-
-
-def order_finder_hits(raw_hits: List[Dict[str, Any]], query: str, intent: Any = None) -> List[Dict[str, Any]]:
-    """Group hits into sections. Only three rows show, so the section people want goes first.
-
-    Apps lead when the query asks for an app or names one. An app that merely fits by
-    purpose must not hide the files someone is looking for by meaning.
-    """
-    apps = [h for h in raw_hits if h["kind"] == "application"]
-    docs = [h for h in raw_hits if h["kind"] != "application"]
-    apps_first = (
-        getattr(intent, "resource_kind", "") == "application"
-        or bool(APP_REQUEST.match((query or "").strip()))
-        or any(h.get("match_reason") != "Khớp công dụng" for h in apps)
-    )
-    sections = [(apps, "ỨNG DỤNG"), (docs, "TÀI LIỆU & TỆP")]
-    hits = []
-    for group, title in sections if apps_first else reversed(sections):
-        for i, h in enumerate(group):
-            h["is_first_of_section"] = (i == 0)
-            h["section_title"] = title
-            hits.append(h)
-    return hits
 
 
 def format_matched_snippet(hit: Optional[Dict[str, Any]], page_content: str, query: str = "") -> Dict[str, Any]:
@@ -402,12 +206,6 @@ class QuickPDFController(QObject):
     _execution_status_delivered = pyqtSignal(str, int, str)
     _finder_delivered = pyqtSignal(object)
     _catalog_ready = pyqtSignal(object)
-    _translation_delivered = pyqtSignal(object)
-    composerPassageTranslated = pyqtSignal()
-    imageDropAccepted = pyqtSignal(str)
-    engagementRequested = pyqtSignal()
-    _quicklook_expand_delivered = pyqtSignal()
-    _shortcut_ack_delivered = pyqtSignal(str, int)
 
     def __init__(
         self,
@@ -418,6 +216,8 @@ class QuickPDFController(QObject):
         preview_file=None,
         assistant_runtime: Optional[AssistantRuntime] = None,
         conversation: Optional[ConversationHistory] = None,
+        reasoning_engine: Optional[Any] = None,
+        allow_synthetic_policy: bool = False,
         finder_search: Optional[ProgressiveSearch] = None,
         finder_catalog: Optional[ApplicationCatalog] = None,
         finder_coordinator: Optional[SearchCoordinator] = None,
@@ -427,8 +227,6 @@ class QuickPDFController(QObject):
         super().__init__(parent)
         self._ready = False
         self._closed = False
-        self._drop_active = False
-        self._image_receive_token = 0
         self._worker = None
         self._request = None
         self._serial = 0
@@ -442,7 +240,7 @@ class QuickPDFController(QObject):
         self._preview_snippet = ""
         self._preview_card_index = -1
         self._unread = False
-        self._status = READY_STATUS
+        self._status = "Chuột sẵn sàng. Bạn cần gì?"
         self._error = ""
         self._events = []
         self._open_url = open_url
@@ -456,26 +254,12 @@ class QuickPDFController(QObject):
         self._execution_status_delivered.connect(self._on_execution_status, Qt.ConnectionType.QueuedConnection)
         self._finder_delivered.connect(self._handle_finder_snapshot, Qt.ConnectionType.QueuedConnection)
         self._catalog_ready.connect(self._on_catalog_ready, Qt.ConnectionType.QueuedConnection)
-        self._translation_delivered.connect(self._handle_translation_delivered, Qt.ConnectionType.QueuedConnection)
-        self._quicklook_expand_delivered.connect(self._handle_quicklook_expand, Qt.ConnectionType.QueuedConnection)
-        self._shortcut_ack_delivered.connect(self._set_shortcut_ack, Qt.ConnectionType.QueuedConnection)
-        self._shortcut_ack_timer = QTimer(self)
-        self._shortcut_ack_timer.setSingleShot(True)
-        self._shortcut_ack_timer.timeout.connect(lambda: self._set_shortcut_ack("", 0))
-        self._translator = None
-        self._composer_translation = False
-        self._index_status = ""
-        self._shortcut_label = ""
-        self._shortcut_ack = ""
-        self._model_warning_checked = False
-        self._translation = None
-        self._translating = False
-        self._last_translation_thread = None
-        self._last_quicklook_thread = None
 
         # Unified shared runtime & conversation state
         self._assistant_runtime = assistant_runtime
         self._conversation = conversation
+        self._reasoning_engine = reasoning_engine
+        self._allow_synthetic_policy = allow_synthetic_policy
 
         self._current_worker = None
         self._execution_workers = set()
@@ -484,7 +268,6 @@ class QuickPDFController(QObject):
         self._chat_generation = 0
         self._last_user_query = ""
         self._last_assistant_answer = ""
-        self._artifact_card: Optional[Dict[str, Any]] = None
         self._displayed_turn_id = None
         self._telemetry = {}
         self._assistant_sources = []
@@ -496,7 +279,6 @@ class QuickPDFController(QObject):
         self._finder_catalog = finder_catalog
         self._finder_hits: List[Dict[str, Any]] = []
         self._finder_query: str = ""
-        self._finder_in_flight_query: Optional[str] = None
         self._finder_feedback = ""
         self._reading_coordinator = ReadingDeskCoordinator(self)
         self._db_path = db_path or str(config.db_path)
@@ -600,21 +382,21 @@ class QuickPDFController(QObject):
         )
         if busy:
             if self._request:
-                title = {"select": "Chuột đang mở PDF.", "search": "Chuột đang tìm trang khớp.", "page": "Chuột đang đọc trang bạn chọn."}[self._request.kind]
+                title = {"select": "Đang mở PDF.", "search": "Đang tìm trang khớp.", "page": "Đang đọc trang đã chọn."}[self._request.kind]
             else:
-                title = self._status or THINKING_STATUS
+                title = self._status or "Đang suy nghĩ…"
         elif view == "search":
             found = search.get("matched_pages", 0)
-            title = f"Chuột tìm ra {found} trang khớp." if found else "Chuột chưa thấy trang nào khớp trong phần đã lật."
+            title = f"Tìm thấy {found} trang khớp." if found else "Chưa có trang khớp trong phần đã tìm."
         elif view == "page":
             title = f"Trang PDF {page['page']} · {page['filename']}"
         elif view == "answer":
             title = self._last_user_query or "Câu trả lời"
         elif view == "finder":
             found = len(self._finder_hits)
-            title = f"Chuột tìm ra {found} thứ" if found else "Chuột không tìm ra gì"
+            title = f"Gợi ý tìm kiếm ({found})" if found else "Không có gợi ý khớp"
         elif view == "error":
-            title = "Có chỗ Chuột chưa làm được."
+            title = "Cần xem lại PDF hoặc yêu cầu."
         else:
             title = self._status
 
@@ -680,7 +462,6 @@ class QuickPDFController(QObject):
         return {
             "phase": "startup" if not self._ready else "working" if busy else "result" if self._view != "none" else "idle",
             "busy": busy,
-            "dropActive": self._drop_active,
             "expanded": self._expanded,
             "workspaceMode": self._workspace_mode,
             "previewPageNumber": self._preview_page,
@@ -694,13 +475,6 @@ class QuickPDFController(QObject):
             "activeContext": active_context,
             "title": title,
             "status": self._status,
-            "indexStatus": self._index_status,
-            "shortcutLabel": self._shortcut_label,
-            "shortcutAck": self._shortcut_ack,
-            # A later answer replaces the translation, so an old card can never sit on top of it.
-            "translation": self._translation if self._translation and self._translation["text"] == self._last_assistant_answer else None,
-            "artifactCard": self._artifact_card,
-            "translating": self._translating,
             "query": self._last_user_query or search.get("query", ""),
             "userQuery": self._last_user_query,
             "answerText": self._last_assistant_answer,
@@ -737,8 +511,9 @@ class QuickPDFController(QObject):
             "canBack": bool(self._search) and self._page_return_view == "search" and view in ("page", "error"),
             "canBackToAnswer": (view == "page" and self._page_return_view == "answer" and bool(self._last_assistant_answer or self._last_user_query)),
             "errorCode": self._error,
-            "errorText": ERROR_MESSAGES.get(self._error, "Chuột chưa làm được việc này."),
+            "errorText": ERROR_MESSAGES.get(self._error, "Không xử lý được yêu cầu này."),
             "events": list(self._events),
+            "contradictionReport": self._telemetry.get("contradiction_report"),
             "finderHits": list(self._finder_hits),
             "finderQuery": self._finder_query,
             "finderFeedback": self._finder_feedback,
@@ -749,14 +524,26 @@ class QuickPDFController(QObject):
             "savedDraft": self._saved_draft,
             "launchFeedback": self._launch_feedback,
             "launchFeedbackError": self._launch_feedback_error,
-            "isQuestionQuery": is_question_query(self._finder_query),
+            "isQuestionQuery": self._is_conversational_query(self._finder_query),
         }
 
-    @pyqtSlot(str, result=bool)
-    def isQuestion(self, text: str) -> bool:
-        return is_question_query(text)
-
-    _is_conversational_query = staticmethod(is_question_query)
+    @staticmethod
+    def _is_conversational_query(text: str) -> bool:
+        q = (text or "").strip()
+        if not q:
+            return False
+        q_low = q.lower()
+        if q.startswith(("?", "¿")) or q.endswith(("?", "？")):
+            return True
+        prefixes = (
+            "sao ", "tại sao ", "vì sao ", "giải thích ", "làm sao ",
+            "làm thế nào ", "cho mình ", "cho tôi ", "hãy ", "tóm tắt ",
+            "so sánh ", "tính ", "viết ", "xin chào", "chào chuột",
+            "how ", "why ", "what ", "explain ", "summarize ",
+        )
+        if any(q_low.startswith(w) for w in prefixes):
+            return True
+        return len(q.split()) >= 5
 
     @pyqtSlot()
     def ready(self):
@@ -799,7 +586,7 @@ class QuickPDFController(QObject):
             self._active_search_hit = None
             self._page_return_view = "none"
             self._view = "answer" if self._last_assistant_answer else "none"
-            self._status = READY_STATUS if not self._last_assistant_answer else ANSWERED_STATUS
+            self._status = "Chuột sẵn sàng. Bạn cần gì?" if not self._last_assistant_answer else "Đã trả lời · có thể hỏi tiếp"
             self.changed.emit()
             return
         self._selection = None
@@ -817,7 +604,7 @@ class QuickPDFController(QObject):
             return
         else:
             path = value
-        self._status = "Chuột đang xem PDF…"
+        self._status = "Đang kiểm tra PDF…"
         self._begin("select", path)
 
     @pyqtSlot()
@@ -832,7 +619,7 @@ class QuickPDFController(QObject):
         self._active_search_hit = None
         self._page_return_view = "none"
         self._view = "answer" if self._last_assistant_answer else "none"
-        self._status = READY_STATUS if not self._last_assistant_answer else ANSWERED_STATUS
+        self._status = "Chuột sẵn sàng. Bạn cần gì?" if not self._last_assistant_answer else "Đã trả lời · có thể hỏi tiếp"
         self.changed.emit()
 
     @pyqtSlot(result=bool)
@@ -882,7 +669,7 @@ class QuickPDFController(QObject):
         self._page_return_view = "none"
         self._expanded = True
         self._unread = False
-        self._status = ANSWERED_STATUS if self._last_assistant_answer else STOPPED_STATUS
+        self._status = "Đã trả lời · có thể hỏi tiếp" if self._last_assistant_answer else "Đã dừng yêu cầu"
         self.changed.emit()
 
     @pyqtSlot(int, result=bool)
@@ -977,71 +764,6 @@ class QuickPDFController(QObject):
             width=width,
         )
 
-    def _is_finder_searching_for(self, q: str) -> bool:
-        return self._finder_in_flight_query == q
-
-    def _wait_for_finder(self, q: str, timeout_sec: float = 1.5):
-        if not self._is_finder_searching_for(q):
-            return
-        deadline = time.perf_counter() + timeout_sec
-        app = QCoreApplication.instance()
-        while self._is_finder_searching_for(q) and time.perf_counter() < deadline:
-            if app:
-                app.processEvents()
-            time.sleep(0.01)
-
-    @pyqtSlot(str, int, result=bool)
-    def handleComposerReturn(self, text: str, selected_index: int = -1) -> bool:
-        """Handle Enter/Return pressed in composer.
-
-        - When search hits for current text are showing and text is not a question, Enter opens first hit.
-        - When it is a question, Enter asks assistant as now.
-        - If search for current text is still running, waits up to 1.5 seconds.
-        - If non-question search finishes with no hits, shows Vietnamese 'không tìm thấy' message and does not call model.
-        """
-        if self._closed:
-            return False
-        q = text.strip()
-        if not q:
-            if self._view == "finder" and self._finder_hits:
-                idx = selected_index if 0 <= selected_index < len(self._finder_hits) else 0
-                return self.openSelectedHit(idx)
-            return False
-
-        # In document reading or active conversation views, Enter submits the
-        # question as indicated by the composer hint
-        current_view = self.snapshot.get("view", "")
-        if current_view in ("answer", "page", "document") or self.snapshot.get("fileName"):
-            return False
-
-        if is_question_query(q):
-            self.submitQuery(q)
-            return True
-
-        # Non-question path:
-        if self._finder_coordinator is not None and self._finder_query != q:
-            self.onComposerTextChanged(q)
-
-        if self._is_finder_searching_for(q):
-            self._wait_for_finder(q, timeout_sec=1.5)
-
-        # Do not open a hit from an older query
-        if self._finder_query == q and self._finder_hits:
-            idx = selected_index if 0 <= selected_index < len(self._finder_hits) else 0
-            return self.openSelectedHit(idx)
-
-        # Non-question search finished with no hits
-        if self._finder_query == q and not self._finder_hits:
-            msg = "Chuột không tìm ra. Nhấn Tab hoặc thêm dấu ? để hỏi thẳng."
-            if self._view == "finder":
-                self._restore_pre_finder_state()
-            self._finder_feedback = msg
-            self._status = msg
-            self.changed.emit()
-            return True
-
-        return False
-
     @pyqtSlot(str)
     def submitQuery(self, query: str):
         q = query.strip()
@@ -1067,7 +789,7 @@ class QuickPDFController(QObject):
 
     def _search_from(self, query, start):
         end = min(self._selection.page_count, start + 399)
-        self._status = f"Chuột đang lật tìm từ trang {start} đến {end}…"
+        self._status = f"Đang tìm từ khóa trong trang PDF {start}–{end}…"
         self._begin("search", self._selection, query, start)
 
     @pyqtSlot()
@@ -1092,7 +814,7 @@ class QuickPDFController(QObject):
             self._page_return_view = "search"
         elif self._search and self._active_search_hit and self._active_search_hit.get("page") != page:
             self._active_search_hit = next((it for it in self._search.get("items", []) if it.get("page") == page), None)
-        self._status = f"Chuột đang đọc trang {page}…"
+        self._status = f"Đang đọc trang PDF {page}…"
         self._begin("page", self._selection, page)
 
     @pyqtSlot()
@@ -1108,10 +830,10 @@ class QuickPDFController(QObject):
     @staticmethod
     def _search_summary(data):
         start, end = data["searched_range"]
-        textless = len(data['textless_pages'])
-        return (f"Chuột lật trang {start}–{end} / {data['page_count']}: "
-                f"{data['matched_pages']} trang khớp, đang hiện {len(data['items'])}."
-                + (f" {textless} trang không có chữ, Chuột chưa chạy OCR nên bỏ qua." if textless else ""))
+        return (f"Đã tìm trang PDF {start}–{end} / {data['page_count']}. "
+                f"{data['matched_pages']} trang khớp; đang hiện {len(data['items'])}. "
+                f"{len(data['textless_pages'])} trang không có văn bản trích xuất. "
+                "Tìm theo từ khóa; OCR chưa chạy.")
 
     def _show_error(self, code):
         if self._request:
@@ -1119,7 +841,7 @@ class QuickPDFController(QObject):
             self._request = None
         self._error = code
         self._view = "error"
-        self._status = ERROR_MESSAGES.get(code, f"Chuột gặp lỗi lạ: {code}")
+        self._status = ERROR_MESSAGES.get(code, f"Lỗi: {code}")
         self._events.append(self._status)
         self._unread = not self._expanded
         self.changed.emit()
@@ -1136,7 +858,7 @@ class QuickPDFController(QObject):
             return
         if request.kind == "select":
             self._selection = data
-            self._status = f"Chuột đã mở {data.path.name}, {data.page_count} trang. Cứ hỏi, hoặc ⌘F để tìm từ khóa."
+            self._status = f"{data.path.name} · {data.page_count} trang PDF. Hỏi trực tiếp trong ô chat hoặc bấm ⌘F để tìm từ khóa."
             if self._auto_read_on_select:
                 self._auto_read_on_select = False
                 self._expanded = True
@@ -1151,9 +873,9 @@ class QuickPDFController(QObject):
         else:
             self._page = data
             self._view = "page"
-            self._status = (f"Chuột mở trang {data['page']} (nhãn {data['page_label']}). "
-                            + ("Chuột chỉ lấy 8.000 ký tự đầu. " if data["truncated"] else "")
-                            + "Bôi đoạn muốn chép; không bôi thì Chuột chép tối đa 500 ký tự đầu trang.")
+            self._status = (f"Đã đọc trang PDF {data['page']} · nhãn PDF {data['page_label']}. "
+                            + ("Văn bản đã cắt ở 8.000 ký tự. " if data["truncated"] else "")
+                            + "Bôi chọn đoạn muốn chép; nếu chưa chọn, dùng tối đa 500 ký tự đầu trang.")
             self._unread = not self._expanded
         self._events.append(self._status)
         self.changed.emit()
@@ -1196,7 +918,7 @@ class QuickPDFController(QObject):
                 self._unread = False
             self._current_worker = None
 
-        self._status = STOPPED_KEEPING_DRAFT_STATUS
+        self._status = "Đã dừng yêu cầu. Nội dung đang nhập vẫn được giữ."
         self._events.append(self._status)
         self.changed.emit()
 
@@ -1312,7 +1034,7 @@ class QuickPDFController(QObject):
         self._last_user_query = snap.query
         self._last_assistant_answer = snap.answer or ""
         self._displayed_turn_id = turn_id
-        self._status = f"Lượt {turn_id} · {TURN_STATUS_LABELS.get(snap.status, snap.status)}"
+        self._status = f"Lượt {turn_id} · {snap.status}"
         self._expanded = True
         self._unread = False
         self.changed.emit()
@@ -1333,126 +1055,6 @@ class QuickPDFController(QObject):
             except Exception:
                 pass
         return committed
-
-    def _dispatch_instant_tool(self, q: str, origin: str = "chat") -> bool:
-        """Handle standalone instant tools: Kinh Dịch, Lenormand, Web crawl, and Timetable."""
-        q_low = q.lower()
-        res_card: Optional[Dict[str, Any]] = None
-        ans_text: str = ""
-
-        # 1. Kinh Dịch
-        iching_keywords = (
-            "kinh dịch", "kinh dich", "gieo quẻ", "gieo que",
-            "bói quẻ", "boi que", "bói dịch", "boi dich",
-            "quẻ dịch", "que dich", "lên quẻ", "len que"
-        )
-        if any(k in q_low for k in iching_keywords):
-            from rat.engine.divination import cast_iching
-            res_card = cast_iching(q)
-            ch_str = f" (Hào {', '.join(str(l) for l in res_card['changing_lines'])} động)" if res_card['changing_lines'] else ""
-            ans_text = (
-                f"🔮 Quẻ Kinh Dịch: {res_card['hexagram_name']}{ch_str}\n"
-                f"• Thượng: {res_card['upper_trigram']} · Hạ: {res_card['lower_trigram']}\n"
-                f"• Ý nghĩa: {res_card['meaning']}\n"
-                f"• Lời khuyên của Chuột: {res_card['advice']}"
-            )
-            if res_card.get("transformed"):
-                t = res_card["transformed"]
-                ans_text += f"\n\n🔄 Quẻ Biến: {t['name']} ({t['upper']} trên {t['lower']})\n• {t['meaning']}"
-
-        # 2. Lenormand
-        elif any(k in q_low for k in (
-            "lenormand", "rút bài", "rut bai", "bói bài", "boi bai",
-            "bói lenormand", "boi lenormand", "rút 3 lá", "rut 3 la"
-        )):
-            from rat.engine.divination import draw_lenormand
-            res_card = draw_lenormand(q, count=3)
-            cards_lines = []
-            for i, c in enumerate(res_card["cards"]):
-                cards_lines.append(f"{i+1}. {c['slot']}: [{c['number']}] {c['icon']} {c['name']} — {c['meaning']}")
-            ans_text = (
-                f"🃏 Rút 3 lá bài Lenormand:\n\n"
-                + "\n".join(cards_lines) + "\n\n"
-                f"✨ Thông điệp: {res_card['summary']}"
-            )
-
-        # 3. Web Crawl / Reader
-        elif re.search(r"https?://", q, re.I):
-            from rat.engine.web_reader import fetch_web_summary, extract_url
-            url = extract_url(q) or q
-            res_card = fetch_web_summary(url)
-            bullets_text = "\n".join(f"• {b}" for b in res_card["bullets"]) if res_card["bullets"] else res_card["summary"]
-            ans_text = (
-                f"🌐 Tóm tắt trang: {res_card['title']} ({res_card['domain']})\n\n"
-                f"{bullets_text}\n\n"
-                f"🔗 Nguồn: {res_card['url']}"
-            )
-
-        # 4. Thời khóa biểu
-        elif any(k in q_low for k in (
-            "thời khóa biểu", "thoi khoa bieu", "lịch học", "lich hoc",
-            "tkb", "xem lịch", "xem lich", "hôm nay học gì", "hom nay hoc gi", "mai học gì", "mai hoc gi"
-        )):
-            from rat.engine.runtime_tools import get_schedule
-            compositor = getattr(self.assistant_runtime, "compositor", None)
-            if compositor is None:
-                from rat.kernel.profile import _main_compositor
-                compositor = _main_compositor()
-
-            target_day = "today"
-            if "mai" in q_low or "tomorrow" in q_low:
-                target_day = "tomorrow"
-            elif any(w in q_low for w in ("thứ 2", "thu 2", "t2", "thứ hai", "thu hai")):
-                target_day = "T2"
-            elif any(w in q_low for w in ("thứ 3", "thu 3", "t3", "thứ ba", "thu ba")):
-                target_day = "T3"
-            elif any(w in q_low for w in ("thứ 4", "thu 4", "t4", "thứ tư", "thu tu")):
-                target_day = "T4"
-            elif any(w in q_low for w in ("thứ 5", "thu 5", "t5", "thứ năm", "thu nam")):
-                target_day = "T5"
-            elif any(w in q_low for w in ("thứ 6", "thu 6", "t6", "thứ sáu", "thu sau")):
-                target_day = "T6"
-            elif any(w in q_low for w in ("thứ 7", "thu 7", "t7", "thứ bảy", "thu bay")):
-                target_day = "T7"
-            elif any(w in q_low for w in ("chủ nhật", "chu nhat", "cn")):
-                target_day = "CN"
-
-            sessions = get_schedule(compositor, target_date=target_day)
-            day_display = "Hôm nay" if target_day == "today" else "Ngày mai" if target_day == "tomorrow" else target_day
-            if sessions:
-                day_display = sessions[0].get("day", day_display)
-                lines = []
-                for s in sessions:
-                    instr = f" ({s['instructor']})" if s.get('instructor') else ""
-                    lines.append(f"• [{s['time']}] {s['course_name']} — Phòng {s['room']}{instr}")
-                ans_text = f"📅 Thời khóa biểu: {day_display}\n\n" + "\n".join(lines)
-            else:
-                ans_text = f"📅 Thời khóa biểu: {day_display}\n\n🎉 Bạn không có tiết học nào trong ngày này. Thảnh thơi nghỉ ngơi nhé!"
-
-            res_card = {
-                "visual_type": "timetable",
-                "day": day_display,
-                "target_date": target_day,
-                "sessions": sessions,
-            }
-
-        if res_card is not None:
-            turn_snap = self.conversation.begin_turn(q, kind="chat")
-            self.conversation.complete_turn(turn_snap.turn_ref.turn_id, ans_text, execution_id=turn_snap.execution_id)
-            self._current_turn_id = turn_snap.turn_ref.turn_id
-            self._displayed_turn_id = turn_snap.turn_ref.turn_id
-            self._current_execution_id = turn_snap.execution_id
-            self._last_user_query = q
-            self._last_assistant_answer = ans_text
-            self._artifact_card = res_card
-            self._view = "answer"
-            self._unread = not self._expanded
-            self._status = ANSWERED_STATUS
-            self._events.append(f"Chuột đã xong {res_card.get('visual_type')}: {q}")
-            self.changed.emit()
-            return True
-
-        return False
 
     def submit(
         self,
@@ -1482,11 +1084,6 @@ class QuickPDFController(QObject):
         if self._finder_coordinator is not None:
             self._finder_coordinator.cancel()
 
-        if self._selection is None and self._dispatch_instant_tool(q, origin=origin):
-            return True
-
-        self._artifact_card = None
-
         history_messages = self.conversation.messages_with_turn_ids()
         turn_references = self.conversation.turn_references()
         art_store = getattr(self.assistant_runtime, "artifact_store", None)
@@ -1508,7 +1105,15 @@ class QuickPDFController(QObject):
         turn_ref = turn_snap.turn_ref
         execution_id = turn_snap.execution_id
 
-        lane = "document" if self._selection is not None else "auto"
+        app_inst = QGuiApplication.instance()
+        engine = self._reasoning_engine
+        if engine is None and app_inst is not None:
+            engine = app_inst.property("ratReasoningEngine")
+        allow_synth = self._allow_synthetic_policy
+        if not allow_synth and app_inst is not None:
+            allow_synth = app_inst.property("ratAllowSyntheticPolicy") is True
+
+        lane = "document" if self._selection is not None else ("reasoning" if engine is not None else "auto")
 
         source_evidence = []
         if self._selection is not None:
@@ -1576,7 +1181,12 @@ class QuickPDFController(QObject):
         )
 
         try:
-            worker = create_execution_worker(self.assistant_runtime, request)
+            worker = create_execution_worker(
+                self.assistant_runtime,
+                request,
+                reasoning_engine=engine,
+                allow_synthetic_policy=allow_synth,
+            )
         except Exception as exc:
             self.conversation.fail_turn(turn_ref.turn_id, "failed", execution_id=execution_id)
             self._show_error(f"worker_creation_failed:{exc}")
@@ -1591,8 +1201,8 @@ class QuickPDFController(QObject):
                 partial_answer=f"Lỗi: {startup_err}",
             )
             self._last_user_query = q
-            self._last_assistant_answer = f"Chuột chưa làm được việc này: {startup_err}"
-            self._status = f"Chuột chưa khởi động được: {startup_err}"
+            self._last_assistant_answer = f"Không thể xử lý yêu cầu: {startup_err}"
+            self._status = f"Lỗi khởi tạo: {startup_err}"
             self._view = "answer"
             self._unread = not self._expanded
             self._events.append(self._status)
@@ -1604,7 +1214,7 @@ class QuickPDFController(QObject):
         self._current_turn_id = turn_ref.turn_id
         self._last_user_query = q
         self._unread = False
-        self._status = THINKING_STATUS
+        self._status = "Chuột đang xử lý yêu cầu…"
         self._events.append(f"Đã gửi yêu cầu: {q}")
         self.changed.emit()
 
@@ -1644,13 +1254,6 @@ class QuickPDFController(QObject):
         turn_id = self._current_turn_id
         self._displayed_turn_id = turn_id
 
-        # Language check on answer
-        from rat.engine.language_check import is_mainly_cjk, is_vietnamese
-        if response.answer and is_vietnamese(self._last_user_query) and is_mainly_cjk(response.answer):
-            err = "language_mismatch"
-            response.error = "language_mismatch"
-            response.answer = ""
-
         err = getattr(response, "error", None) or (getattr(response, "status", None) if getattr(response, "status", None) != "completed" else None)
         if err in ("cancelled", "budget_exceeded", "timeout", "failed", "unresolved") or err is not None:
             status_kind = err if err in ("cancelled", "budget_exceeded", "timeout", "failed", "unresolved") else "failed"
@@ -1667,7 +1270,18 @@ class QuickPDFController(QObject):
             self._last_assistant_answer = response.answer or ""
             self._telemetry = {**(getattr(response, "telemetry_breakdown", {}) or {}),
                                **(getattr(response, "qa_telemetry", {}) or {})}
-            self._status = describe_execution_error(err)
+            if status_kind == "budget_exceeded":
+                self._status = "Đã vượt hạn mức ngân sách (0 tokens/requests/strategies)."
+            elif status_kind == "timeout":
+                self._status = "Hết thời gian xử lý yêu cầu."
+            elif status_kind == "unresolved":
+                self._status = "Không thể giải quyết yêu cầu với dữ kiện hiện có."
+            elif status_kind == "cancelled":
+                self._status = "Đã dừng · có thể gửi yêu cầu mới"
+            elif err == "empty_model_response":
+                self._status = "Model trả về nội dung rỗng. Bạn có thể thử gửi lại."
+            else:
+                self._status = "Yêu cầu chưa hoàn tất"
             self._view = "answer"
             self._unread = not self._expanded
             self._events.append(self._status)
@@ -1727,38 +1341,27 @@ class QuickPDFController(QObject):
         # Respect the user's current mode; a completed answer updates the preview.
         self._unread = not self._expanded
 
-        self._status = ANSWERED_STATUS
+        c_rep = self._telemetry.get("contradiction_report")
+        if c_rep and not c_rep.get("passed"):
+            count = len(c_rep.get("findings", []))
+            self._status = f"Phát hiện {count} mâu thuẫn trong chuỗi suy luận"
+            self._events.append(f"⚠️ ContradictionAuditor: {count} mâu thuẫn đơn điệu bị gắn cờ.")
+        elif self._telemetry.get("bundle_review_status") == "synthetic_development_only":
+            self._status = "Bản thử nghiệm · kết quả fixture, chưa đánh giá model"
+        else:
+            self._status = "Đã trả lời · có thể hỏi tiếp"
 
         self._events.append(self._status)
         self.changed.emit()
-        self._warn_once_if_model_cannot_read_files()
-        blocked = curr_telem.get("blocked_actions")
-        if blocked:
-            self._events.append("Đã chặn: " + ", ".join(item["tool"] for item in blocked))
-            self._set_shortcut_ack(f"Chuột đã chặn: {blocked[0]['label']}. Tệp tự yêu cầu việc này; muốn làm thì bạn cứ bảo.", 8000)
-
-    def _warn_once_if_model_cannot_read_files(self):
-        """A small model answers "I will read the file" and then does not, so say why, once."""
-        if self._model_warning_checked or self.assistant_runtime.model_client is not None:
-            return
-        self._model_warning_checked = True
-
-        def check():
-            from rat.engine.slm import TOOL_CAPABLE_MODELS, assistant_can_use_tools
-            if not assistant_can_use_tools():
-                self._shortcut_ack_delivered.emit(
-                    f"Model này chưa đọc được file. Cài: ollama pull {TOOL_CAPABLE_MODELS[0]}", 8000)
-
-        threading.Thread(target=check, name="rat-assistant-model-check", daemon=True).start()
 
     @pyqtSlot(str, int, str)
     def _on_execution_status(self, eid: str, gen: int, status: str):
         if self._closed or self._current_worker is None or eid != self._current_execution_id or gen != self._chat_generation:
             return
         if status == "cancel":
-            self._status = "Chuột đang dừng…"
+            self._status = "Đang dừng xử lý…"
         elif status == "wait":
-            self._status = "Chuột đang chờ kết quả…"
+            self._status = "Đang chờ kết quả…"
         elif status not in ("working", "done", "error"):
             self._status = status
         self.changed.emit()
@@ -1799,16 +1402,12 @@ class QuickPDFController(QObject):
 
     @pyqtSlot()
     def startIndexing(self, reason: str = "") -> bool:
-        if self._closed:
-            return False
-        if self.snapshot.get("busy"):
-            if reason != "panel_open":
-                QTimer.singleShot(2000, lambda: self.startIndexing(reason))
+        if self._closed or self.snapshot.get("busy"):
             return False
         now = time.monotonic()
         if reason == "panel_open" and now - self._last_index_time < 30.0:
             return False
-        roots = config.indexed_directories
+        roots = getattr(config, "watch_dirs", None)
         if not roots:
             roots = [str(Path.home() / d) for d in ("Documents", "Desktop", "Downloads")]
         valid_roots = [r for r in roots if Path(r).is_dir()]
@@ -1819,22 +1418,11 @@ class QuickPDFController(QObject):
             self.refresh_index_progress()
         return started
 
-    def set_shortcut_label(self, label: str):
-        """The key that summons this desk. Empty when no such key is live, as in a one-window run."""
-        if label != self._shortcut_label:
-            self._shortcut_label = label
-            self.changed.emit()
-
     def refresh_index_progress(self):
         state = self._finder_semantic.progress()
-        kind = state.get("state")
-        if kind not in ("scanning", "indexing"):
+        busy = state.get("state") in ("scanning", "indexing")
+        if not busy:
             self._index_timer.stop()
-        status = {"scanning": "Chuột đang xem qua các thư mục…",
-                  "indexing": f"Chuột đang đọc tài liệu · {state.get('done', 0)}/{state.get('total', 0)}"}.get(kind, "")
-        if status != self._index_status:
-            self._index_status = status
-            self.changed.emit()
 
     @pyqtSlot(str)
     def onComposerTextChanged(self, text: str):
@@ -1866,7 +1454,6 @@ class QuickPDFController(QObject):
         elif had_feedback:
             self.changed.emit()
         if not q:
-            self._finder_in_flight_query = None
             if self._finder_coordinator is not None:
                 self._finder_coordinator.cancel()
             had_hits = bool(self._finder_hits)
@@ -1878,7 +1465,6 @@ class QuickPDFController(QObject):
                 self.changed.emit()
             return
         if self._finder_coordinator is not None:
-            self._finder_in_flight_query = q
             self._finder_coordinator.submit(q, limit=10)
 
     def _restore_pre_finder_state(self):
@@ -1902,12 +1488,12 @@ class QuickPDFController(QObject):
             if self._pre_finder_status:
                 self._status = self._pre_finder_status
             elif self._last_assistant_answer:
-                self._status = ANSWERED_STATUS
+                self._status = "Đã trả lời · có thể hỏi tiếp"
             elif self._last_user_query:
-                self._status = STOPPED_KEEPING_DRAFT_STATUS
+                self._status = "Đã dừng yêu cầu. Nội dung đang nhập vẫn được giữ."
         else:
             self._expanded = False
-            self._status = self._pre_finder_status or READY_STATUS
+            self._status = self._pre_finder_status or "Chuột sẵn sàng. Bạn cần gì?"
         self._pre_finder_view = "none"
         self._pre_finder_status = None
 
@@ -1918,7 +1504,6 @@ class QuickPDFController(QObject):
             return
         if self._finder_coordinator is not None:
             self._finder_coordinator.cancel()
-        self._finder_in_flight_query = None
         if self._view == "finder":
             self._restore_pre_finder_state()
             if self._view == "none":
@@ -1927,13 +1512,6 @@ class QuickPDFController(QObject):
             self.changed.emit()
         elif not self._last_assistant_answer and not self._last_user_query and self._finder_hits:
             self._finder_hits = []
-            self.changed.emit()
-
-    @pyqtSlot()
-    def showFinderForDraft(self):
-        """The user chose to search with this draft: show what was found, or say nothing was."""
-        if not self.openFinderSuggestions():
-            self._finder_feedback = "Chuột không tìm ra file nào cho đoạn này."
             self.changed.emit()
 
     @pyqtSlot(result=bool)
@@ -1947,7 +1525,7 @@ class QuickPDFController(QObject):
             self._pre_finder_status = self._status
         self._view = "finder"
         count = len(self._finder_hits)
-        self._status = finder_found_status(count, self._finder_query)
+        self._status = f"Tìm thấy {count} gợi ý cho '{self._finder_query}'"
         self._expanded = True
         self._unread = False
         self.changed.emit()
@@ -1965,9 +1543,6 @@ class QuickPDFController(QObject):
         if self._selection is not None or self.snapshot["busy"]:
             return
 
-        if snapshot.query == self._finder_in_flight_query and (snapshot.hits or snapshot.complete):
-            self._finder_in_flight_query = None
-
         home_str = str(Path.home())
         raw_hits = []
         for h in snapshot.hits:
@@ -1979,7 +1554,6 @@ class QuickPDFController(QObject):
                 snippet = "~" + snippet[len(home_str):]
             p = Path(h.path)
             parent_name = p.parent.name if p.parent and p.parent.name else ""
-            match_reason = h.match_reason or ("Khớp tên ứng dụng" if h.kind == "application" else "Khớp chỉ mục tài liệu")
             raw_hits.append({
                 "resource_id": h.resource_id,
                 "kind": h.kind,
@@ -1989,23 +1563,34 @@ class QuickPDFController(QObject):
                 "file_name": p.name,
                 "display_path": display_path,
                 "origin": h.origin,
-                "match_reason": match_reason,
-                "row_detail": finder_row_detail(h.kind, match_reason, display_path),
+                "match_reason": h.match_reason or ("Khớp tên ứng dụng" if h.kind == "application" else "Khớp chỉ mục tài liệu"),
                 "snippet": snippet,
-                "excerpt": h.snippet if h.kind == "file" and h.snippet != h.path else "",
                 "bundle_id": h.bundle_id or "",
                 "is_pdf": h.path.lower().endswith(".pdf"),
             })
 
-        hits = order_finder_hits(raw_hits, snapshot.query, snapshot.intent)
+        # Group by category: Applications first, then Files & PDFs
+        apps = [h for h in raw_hits if h["kind"] == "application"]
+        docs = [h for h in raw_hits if h["kind"] != "application"]
+        hits = []
+        if apps:
+            for i, h in enumerate(apps):
+                h["is_first_of_section"] = (i == 0)
+                h["section_title"] = "ỨNG DỤNG"
+                hits.append(h)
+        if docs:
+            for i, h in enumerate(docs):
+                h["is_first_of_section"] = (i == 0)
+                h["section_title"] = "TÀI LIỆU & TỆP"
+                hits.append(h)
 
         count = len(hits)
         if count == 0:
             if snapshot.intent and snapshot.intent.resource_kind in ("file", "slide", "report"):
                 self._finder_feedback = (
-                    "Chuột chưa vào được chỉ mục tệp. Bạn chọn tệp bằng nút đính kèm nhé."
+                    "Chưa truy cập được chỉ mục tệp. Bạn có thể chọn tệp bằng nút đính kèm."
                     if 'file_index_unavailable' in snapshot.errors else
-                    "Chuột chưa thấy tệp khớp. Bạn nhớ thêm chủ đề, loại tệp hoặc thời gian không?"
+                    "Chưa thấy tệp khớp trong chỉ mục. Bạn nhớ thêm chủ đề, loại tệp hoặc thời gian không?"
                 )
             had_hits = bool(self._finder_hits)
             self._finder_hits = []
@@ -2019,11 +1604,11 @@ class QuickPDFController(QObject):
         # Keep active answer reading or conversational typing intact; expose hits via subtle drawer tab.
         reading_answer = (
             self._view == "answer"
-            or (self._view == "finder" and self._pre_finder_view == "answer" and is_question_query(snapshot.query))
+            or (self._view == "finder" and self._pre_finder_view == "answer" and self._is_conversational_query(snapshot.query))
         )
-        if reading_answer or is_question_query(snapshot.query):
+        if reading_answer or self._is_conversational_query(snapshot.query):
             self._finder_hits = hits
-            if self._view == "finder" and is_question_query(snapshot.query):
+            if self._view == "finder" and self._is_conversational_query(snapshot.query):
                 self._restore_pre_finder_state()
             self.changed.emit()
             return
@@ -2034,7 +1619,7 @@ class QuickPDFController(QObject):
             self._pre_finder_status = self._status
         self._finder_hits = hits
         self._view = "finder"
-        self._status = finder_found_status(count, snapshot.query)
+        self._status = f"Tìm thấy {count} gợi ý cho '{snapshot.query}'"
         self._expanded = True
         self._unread = False
         self.changed.emit()
@@ -2048,13 +1633,13 @@ class QuickPDFController(QObject):
             try:
                 revalidate_application_bundle(p)
             except Exception as exc:
-                self._launch_feedback = f"Chuột không mở được {p.name}: {exc}"
+                self._launch_feedback = f"Không thể mở {p.name}: {exc}"
                 self._launch_feedback_error = True
                 self.changed.emit()
                 return False
             return self._open_application(p)
         if not p.exists():
-            self._launch_feedback = f"Chuột không mở được {p.name}: tệp đã rời chỗ cũ."
+            self._launch_feedback = f"Không thể mở {p.name}: tệp không còn ở vị trí đã tìm thấy."
             self._launch_feedback_error = True
             self.changed.emit()
             return False
@@ -2063,8 +1648,8 @@ class QuickPDFController(QObject):
             accepted = bool(opener(QUrl.fromLocalFile(str(p.resolve()))))
         except Exception:
             accepted = False
-        self._launch_feedback = (f"Chuột đang mở {p.name}." if accepted
-                                 else f"Chuột chưa mở được {p.name}. Thử lại nhé.")
+        self._launch_feedback = (f"Đã gửi yêu cầu mở {p.name}." if accepted
+                                 else f"Không thể gửi yêu cầu mở {p.name}. Bạn có thể thử lại.")
         self._launch_feedback_error = not accepted
         self.changed.emit()
         return accepted
@@ -2090,8 +1675,8 @@ class QuickPDFController(QObject):
             logger.exception("Application launch through execution service failed")
             accepted, name = False, path.stem
         self._launch_feedback_error = not accepted
-        self._launch_feedback = (f"Chuột đang mở {name}." if accepted else
-                                 f"Chuột không mở được {name}. Xem lại bản cài hoặc thử lại nhé.")
+        self._launch_feedback = (f"Đã gửi yêu cầu mở {name}." if accepted else
+                                 f"Không thể mở {name}. Kiểm tra bản cài đặt hoặc thử lại.")
         self.changed.emit()
         return accepted
 
@@ -2107,7 +1692,7 @@ class QuickPDFController(QObject):
         self._expanded = True
         self._unread = False
         count = len(self._cached_apps_list)
-        self._status = f"Chuột thấy {count} ứng dụng trên máy. Bấm icon hoặc Enter để mở."
+        self._status = f"Ứng dụng đã cài đặt ({count}) · Bấm icon hoặc Enter để mở"
         self.changed.emit()
 
     @pyqtSlot(result=str)
@@ -2119,7 +1704,7 @@ class QuickPDFController(QObject):
         restored = self._saved_draft
         self._saved_draft = ""
         self._finder_query = ""
-        self._status = READY_STATUS if not self._last_assistant_answer else ANSWERED_STATUS
+        self._status = "Chuột sẵn sàng. Bạn cần gì?" if not self._last_assistant_answer else "Đã trả lời · có thể hỏi tiếp"
         self.changed.emit()
         return restored
 
@@ -2213,160 +1798,32 @@ class QuickPDFController(QObject):
             self._finder_hits = hits
             self._finder_query = query
             self._view = "finder"
-            self._status = finder_found_status(len(hits), query)
-            self.changed.emit()
+            self._status = f"Tìm thấy {len(hits)} gợi ý cho '{query}'"
+            self.snapshotChanged.emit()
             return art.id
         except Exception as exc:
             logger.warning("findFileOrApp dispatch failed: %s", exc)
             return ""
 
-    def _get_translator(self):
-        if self._translator is None:
-            from rat.engine.snippet_translation import SnippetTranslator
-            self._translator = SnippetTranslator()
-        return self._translator
-
-    @pyqtSlot(str, result=bool)
-    def isForeignPassage(self, text: str) -> bool:
-        """A passage not in the user's language; translating it needs no model.
-
-        A selected document or attachment makes the text a question about that source.
-        """
-        clean = text.strip()
-        if self._selection is not None or self._assistant_sources or not looks_like_passage(clean):
-            return False
-        if all(re.fullmatch(r"\S*[/\\]\S*", line.strip()) for line in clean.splitlines() if line.strip()):
-            return False
-        from rat.engine.snippet_translation import detect_language
-        return detect_language(clean) not in (None, "vi")
-
-    @pyqtSlot(str, result=bool)
-    def needsIntentChoice(self, text: str) -> bool:
-        """Whether Enter should first ask: translate this, or find a file?"""
-        if self._selection is not None or self._assistant_sources or self._view not in ("none", "finder"):
-            return False
-        return offers_find_or_translate(text)
-
-    @pyqtSlot(str)
-    def translatePassage(self, text: str):
-        """Translate the composer's text. It is cleared only once the translation arrives."""
-        if self._composer_translation:
-            return
-        self._composer_translation = len(text.strip()) <= 8000
-        self.translateText(text)
-
-    def _handle_translation_delivered(self, payload: dict):
-        try:
-            if not payload:
-                return
-            from_composer, self._composer_translation = self._composer_translation, False
-            self._translating = False
-            if self._shortcut_ack:
-                failed = "" if payload.get("ok") else f"Chuột chưa dịch được: {payload.get('error') or 'không rõ vì sao'}"
-                self._set_shortcut_ack(failed, SHORTCUT_ACK_HOLD_MS if failed else 0)
-            if payload.get("ok"):
-                if from_composer:
-                    self.composerPassageTranslated.emit()
-                self._translation = translation_card(payload)
-                self._last_user_query = f"Dịch sang {language_name(payload.get('target_lang', 'vi'))}"
-                self._last_assistant_answer = payload.get("text", "")
-                self._view = "answer"
-                self._status = f"Chuột dịch xong, {self._translation['direction']}."
-                self._expanded = True
-            else:
-                err = payload.get("error") or "không rõ vì sao"
-                self._status = f"Chuột chưa dịch được: {err}"
-            self.changed.emit()
-        except Exception as exc:
-            logger.warning("Error in translation delivered handler: %s", exc)
-            self._status = f"Chuột chưa dịch được: {exc}"
-            self.changed.emit()
-
-    @pyqtSlot()
-    def flipTranslation(self):
-        """Swap sides: the translation becomes the new source, translated back the other way."""
-        card = self.snapshot["translation"]
-        if not card or self._translating:
-            return
-        if card["source"] == card["target"]:
-            self.translateText(card["sourceText"], "auto", "en" if card["target"] == "vi" else "vi")
-        else:
-            self.translateText(card["text"], card["target"], card["source"])
-
-    @pyqtSlot(str, int)
-    def _set_shortcut_ack(self, message: str, hold_ms: int = 0):
-        """What a global shortcut is doing right now. With hold_ms it clears itself; else the work clears it."""
-        if self._closed:
-            return
-        self._shortcut_ack_timer.stop()
-        if hold_ms:
-            self._shortcut_ack_timer.start(hold_ms)
-        if message != self._shortcut_ack:
-            self._shortcut_ack = message
-            self.changed.emit()
-
-    def _handle_quicklook_expand(self):
-        self.setExpanded(True)
-
     @pyqtSlot(str, str, str, result=str)
     @pyqtSlot(str, str, result=str)
     @pyqtSlot(str, result=str)
     def translateText(self, text: str, source_lang: str = "auto", target_lang: str = "vi") -> str:
-        """Translates text snippet on worker thread using shared SnippetTranslator, delivering via Qt signal."""
-        try:
-            if not text or not text.strip():
-                return ""
-            clean_text = text.strip()
-            if len(clean_text) > 8000:
-                self._status = "Đoạn này dài quá, Chuột dịch tối đa 8.000 ký tự một lần."
-                self.changed.emit()
-                if self._shortcut_ack:
-                    self._shortcut_ack_delivered.emit(self._status, SHORTCUT_ACK_HOLD_MS)
-                return ""
-
-            self._status = "Chuột đang dịch…"
-            self._translating = True
-            self.changed.emit()
-
-            def _worker():
-                try:
-                    translator = self._get_translator()
-                    res = translator.translate(clean_text, source=source_lang, target=target_lang)
-                    translated = res.get("text", "")
-                    if not translated:
-                        self._translation_delivered.emit({
-                            "ok": False,
-                            "error": "không nhận được bản dịch",
-                        })
-                    else:
-                        self._translation_delivered.emit({
-                            "ok": True,
-                            "text": translated,
-                            "source_lang": res.get("source_language", source_lang),
-                            "target_lang": target_lang,
-                            "source_text": clean_text,
-                            "provider": res.get("provider", ""),
-                            "glossary_terms": res.get("glossary_terms", 0),
-                            "line_joins": res.get("line_joins", 0),
-                            "status": res.get("status", ""),
-                            "warnings": res.get("warnings", []),
-                        })
-                except Exception as exc:
-                    logger.warning("Snippet translation failed: %s", exc)
-                    self._translation_delivered.emit({
-                        "ok": False,
-                        "error": str(exc),
-                    })
-
-            thread = threading.Thread(target=_worker, name="rat-quick-translate", daemon=True)
-            thread.start()
-            self._last_translation_thread = thread
+        """Translates text snippet on the full app's translation path using SnippetTranslator."""
+        if not text or not text.strip():
             return ""
-        except Exception as exc:
-            logger.warning("translateText slot error: %s", exc)
-            self._status = f"Chuột chưa dịch được: {exc}"
+        from rat.engine.snippet_translation import SnippetTranslator
+        translator = SnippetTranslator()
+        res = translator.translate(text, source=source_lang, target=target_lang)
+        translated = res.get("text", "")
+        if translated:
+            self._last_user_query = f"Dịch sang {target_lang}"
+            self._last_assistant_answer = translated
+            self._view = "answer"
+            self._status = f"Đã dịch từ {res.get('source_language', source_lang)} sang {target_lang}"
+            self._expanded = True
             self.changed.emit()
-            return ""
+        return translated
 
     def _get_clipboard_change_count(self) -> int:
         if sys.platform != "darwin":
@@ -2387,181 +1844,44 @@ class QuickPDFController(QObject):
 
     @pyqtSlot()
     def quickLookSelection(self):
-        """Shortcut order on worker thread: live selection first, clipboard only if copied within 2 minutes."""
-        try:
-            if self._closed:
-                return
-            if self.snapshot["busy"] or self._translating:
-                self._set_shortcut_ack("Chuột đang bận việc trước. Xong rồi bấm lại nhé.", SHORTCUT_ACK_HOLD_MS)
-                return
-            self._set_shortcut_ack("Chuột đang lấy đoạn bạn bôi đen…")
-            current_change = self._update_clipboard_change()
-
-            # Read clipboard on GUI thread safely before offloading
-            now = time.monotonic()
-            is_fresh_copy = (
-                current_change != -1
-                and current_change != self._consumed_clipboard_change
-                and (now - self._clipboard_change_time <= 120.0)
-            )
-            clipboard_text = ""
-            if is_fresh_copy:
-                cb = QGuiApplication.clipboard()
-                clipboard_text = cb.text() if cb else ""
-
-            from rat.os.permissions import is_accessibility_trusted
-            trusted = is_accessibility_trusted()
-
-            def _worker():
-                try:
-                    # 1. Live selection first if accessibility is trusted
-                    selected_text = ""
-                    if trusted:
-                        try:
-                            from rat.os.selected_text import read_selected_text
-                            selected_text = (read_selected_text() or "").strip()
-                        except Exception as exc:
-                            logger.debug("Live selection capture failed: %s", exc)
-
-                    if selected_text:
-                        self._shortcut_ack_delivered.emit("Chuột đang dịch đoạn bôi đen…", 0)
-                        self.translateText(selected_text)
-                        return
-
-                    # 2. Clipboard fallback only if copied within 2 minutes
-                    if is_fresh_copy and clipboard_text.strip():
-                        self._consumed_clipboard_change = current_change
-                        self._shortcut_ack_delivered.emit("Chuột đang dịch đoạn bạn vừa chép…", 0)
-                        self.translateText(clipboard_text.strip())
-                        return
-
-                    # Fallback: expand Desk if neither selection nor fresh copy
-                    self._shortcut_ack_delivered.emit(
-                        "Chuột không thấy đoạn bôi đen. Bôi đen hoặc ⌘C rồi bấm lại." if trusted
-                        else "Chưa có quyền Trợ năng: ⌘C đoạn cần dịch rồi bấm lại.", SHORTCUT_ACK_HOLD_MS)
-                    self._quicklook_expand_delivered.emit()
-                except Exception as exc:
-                    logger.warning("quickLookSelection worker failed: %s", exc)
-                    self._translation_delivered.emit({"ok": False, "error": str(exc)})
-
-            thread = threading.Thread(target=_worker, name="rat-quicklook-selection", daemon=True)
-            thread.start()
-            self._last_quicklook_thread = thread
-        except Exception as exc:
-            logger.warning("quickLookSelection slot error: %s", exc)
-            self._status = f"Phím tắt chưa chạy được: {exc}"
-            self.changed.emit()
-
-    @pyqtSlot(bool)
-    def setDropActive(self, active: bool):
-        if self._drop_active != active:
-            self._drop_active = active
-            self.changed.emit()
-
-    def beginImageReceive(self) -> int:
-        self._image_receive_token += 1
-        self._status = "Chuột đang nhận ảnh…"
-        self.changed.emit()
-        return self._image_receive_token
-
-    def isImageReceiveCurrent(self, token: int) -> bool:
-        return self._image_receive_token == token and not self._closed
-
-    def finishImageReceive(self, token: int, image=None, label: str = "Ảnh vừa thả", instruction: str = "", error: str = ""):
-        if not self.isImageReceiveCurrent(token):
+        """Shortcut order: live selection first, clipboard only if copied within 2 minutes."""
+        if self._closed or self.snapshot["busy"]:
             return
-        if error:
-            self._status = f"Chuột chưa nhận được ảnh: {error}"
-            self.changed.emit()
-            return
-        if image is not None:
-            self.acceptDroppedImage(image, label, instruction)
+        current_change = self._update_clipboard_change()
 
-    def image_input_error(self, message: str):
-        self._status = message
-        self.changed.emit()
-
-    @pyqtSlot(str, result=bool)
-    @pyqtSlot(str, str, result=bool)
-    def acceptDroppedImageUrl(self, url_or_path: str, instruction: str = "") -> bool:
-        """Accept an image file dropped into RAT Desk, run OCR, and translate."""
-        try:
-            from rat.ui.image_input import image_from_url
-            image, label = image_from_url(url_or_path)
-            return self.acceptDroppedImage(image, label, instruction)
-        except Exception as exc:
-            logger.warning("acceptDroppedImageUrl failed: %s", exc)
-            self._status = f"Chuột chưa nhận được ảnh: {exc}"
-            self.changed.emit()
-            return False
-
-    def acceptDroppedImage(self, image: Any, label: str = "Ảnh vừa thả", instruction: str = "") -> bool:
-        """Capture text from dropped or pasted image via OCR and translate."""
-        if self._translating or self._closed:
-            return False
-        self._status = "Chuột đang đọc chữ trong ảnh…"
-        self._translating = True
-        self.imageDropAccepted.emit(instruction)
-        self.changed.emit()
-
-        def _worker():
+        # 1. Live selection first if accessibility is trusted
+        from rat.os.permissions import is_accessibility_trusted
+        if is_accessibility_trusted():
             try:
-                from rat.engine.snippet_translation import capture_text
-                capture_res = capture_text(mode="image", image_input=image)
-                ocr_text = capture_res.get("text", "").strip()
-                if not ocr_text:
-                    self._translation_delivered.emit({
-                        "ok": False,
-                        "error": "không nhận ra chữ trong ảnh",
-                    })
+                from rat.os.selected_text import read_selected_text
+                text = read_selected_text()
+                if text and text.strip():
+                    self.translateText(text.strip())
                     return
-                # Translate OCR'd text
-                target_lang = "vi"
-                translator = self._get_translator()
-                res = translator.translate(ocr_text, source="auto", target=target_lang)
-                translated = res.get("text", "")
-                if not translated:
-                    self._translation_delivered.emit({
-                        "ok": False,
-                        "error": "không nhận được bản dịch sau khi đọc ảnh",
-                    })
-                else:
-                    self._translation_delivered.emit({
-                        "ok": True,
-                        "text": translated,
-                        "source_text": ocr_text,
-                        "source_lang": res.get("source_lang", "auto"),
-                        "target_lang": target_lang,
-                        "origin": f"ocr:{image.origin}",
-                        "method": "ocr+apple_translate" if "apple" in res.get("engine", "") else "ocr+offline",
-                        "duration": res.get("duration", 0.0),
-                    })
             except Exception as exc:
-                logger.warning("Image OCR/translation worker error: %s", exc)
-                self._translation_delivered.emit({
-                    "ok": False,
-                    "error": str(exc),
-                })
+                logger.debug("Live selection capture failed: %s", exc)
 
-        threading.Thread(target=_worker, daemon=True, name="RatImageOCRTranslator").start()
-        return True
+        # 2. Clipboard fallback only if copied within 2 minutes (120s) and not already consumed
+        now = time.monotonic()
+        is_fresh_copy = (
+            current_change != -1
+            and current_change != self._consumed_clipboard_change
+            and (now - self._clipboard_change_time <= 120.0)
+        )
+        if is_fresh_copy:
+            cb = QGuiApplication.clipboard()
+            text = cb.text() if cb else ""
+            if text and text.strip():
+                self._consumed_clipboard_change = current_change
+                self.translateText(text.strip())
+                return
+
+        # Fallback: expand Desk if neither selection nor fresh copy
+        self.setExpanded(True)
 
     @pyqtSlot()
     def translateClipboard(self):
         cb = QGuiApplication.clipboard()
-        if not cb:
-            return
-        mime = cb.mimeData()
-        if mime:
-            from rat.ui.image_input import ENCODED_IMAGE_TYPES, image_from_mime
-            if mime.hasImage() or any(mime.hasFormat(k) for k in ENCODED_IMAGE_TYPES):
-                try:
-                    image, label = image_from_mime(mime, clipboard=True)
-                    self._consumed_clipboard_change = self._update_clipboard_change()
-                    self.acceptDroppedImage(image, label)
-                    return
-                except Exception as exc:
-                    logger.debug("Clipboard image extraction not applicable: %s", exc)
         text = cb.text() if cb else ""
         if text.strip():
             self._consumed_clipboard_change = self._update_clipboard_change()
@@ -2665,14 +1985,14 @@ class QuickPDFController(QObject):
                 if self._finder_coordinator is not None:
                     self._finder_coordinator.cancel()
                 self._expanded = True
-                self._status = f"Chuột đang đọc {p.name}…"
+                self._status = f"Chuột đang đọc {p.name} và phân tích câu hỏi…"
                 self.changed.emit()
                 return self.submit(clean_terms, origin="ui_action")
             else:
                 self.selectFile(str(p), auto_read=is_pdf)
                 self._finder_hits = []
                 self._finder_query = ""
-                self._status = f"Chuột đã lấy {p.name} ra bàn. Cứ hỏi."
+                self._status = f"Đã chọn tài liệu: {p.name}"
                 self.changed.emit()
                 return True
         return False
@@ -2701,19 +2021,6 @@ class QuickPDFController(QObject):
             except Exception:
                 return False
         return False
-
-    @pyqtSlot(int, result=bool)
-    def copySelectedHitPath(self, index: int) -> bool:
-        """Copy a result's full path; the row itself only shows its last two folders."""
-        if not 0 <= index < len(self._finder_hits):
-            return False
-        hit = self._finder_hits[index]
-        if hit.get("kind") != "file" or not hit.get("path"):
-            return False
-        copied = self._set_and_verify_clipboard(hit["path"])
-        self._set_shortcut_ack(f"Đã chép đường dẫn {Path(hit['path']).name}." if copied
-                               else "Chuột chưa chép được đường dẫn này.", 1800)
-        return copied
 
     @pyqtSlot(int, result=bool)
     def revealSelectedInFinder(self, index: int) -> bool:

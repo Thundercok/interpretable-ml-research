@@ -1,17 +1,10 @@
-"""Qt Quick UI exports, loaded only when explicitly requested.
-
-Importing a presentation helper must not initialize the application or Qt.
 """
-from __future__ import annotations
+rat.ui — GUI components for rat Spotlight assistant.
+"""
 
-__all__ = ["QuickPDFController", "quick_main"]
+from rat.ui.omnibar import OmnibarWindow
+from rat.ui.preview_panel import PreviewPanel
+from rat.ui.settings_dialog import SettingsDialog
+from rat.ui.spotlight_window import SpotlightWindow
 
-
-def __getattr__(name):
-    if name == "QuickPDFController":
-        from rat.ui.quick_pdf_controller import QuickPDFController
-        return QuickPDFController
-    if name == "quick_main":
-        from rat.ui.quick_app import main
-        return main
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__all__ = ["OmnibarWindow", "SpotlightWindow", "PreviewPanel", "SettingsDialog"]

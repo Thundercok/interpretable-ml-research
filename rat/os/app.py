@@ -67,12 +67,15 @@ class ResidentApplication(QObject):
     open_schedule_signal = pyqtSignal()
     open_widget_signal = pyqtSignal()
     open_natal_signal = pyqtSignal()
-    quicklook_signal = pyqtSignal()
 
-    def __init__(self, mode: str = "all") -> None:
+    def __init__(self, mode: str = "all", *, reasoning_engine=None, allow_synthetic_policy=False) -> None:
         install_crash_shield()
         self.app = QGuiApplication.instance() or QGuiApplication(sys.argv)
         super().__init__()
+        if reasoning_engine is not None:
+            from rat.ui.reasoning_host import install_reasoning_engine
+            install_reasoning_engine(self.app, reasoning_engine,
+                                     allow_synthetic_policy=allow_synthetic_policy)
         self.mode = mode
         self.app.setApplicationName("RAT · Trợ lý thông minh & PDF Desk")
         self.app.setQuitOnLastWindowClosed(False)  # Keep running resident in menu bar
@@ -104,7 +107,6 @@ class ResidentApplication(QObject):
         self.open_schedule_signal.connect(self._do_open_schedule, Qt.ConnectionType.QueuedConnection)
         self.open_widget_signal.connect(self._do_open_widget, Qt.ConnectionType.QueuedConnection)
         self.open_natal_signal.connect(self._do_open_natal, Qt.ConnectionType.QueuedConnection)
-        self.quicklook_signal.connect(self._do_quicklook_selection, Qt.ConnectionType.QueuedConnection)
         self.app.aboutToQuit.connect(self._on_app_quit)
         self.app.installEventFilter(self)
 
@@ -117,12 +119,6 @@ class ResidentApplication(QObject):
         return self._shutdown_state != "idle"
 
     def eventFilter(self, watched, event):
-        if watched is getattr(self, "desk_view", None) and event.type() == QEvent.Type.Close:
-            if not self.is_quitting:
-                event.ignore()
-                if self.desk_view:
-                    self.desk_view.hide()
-                return True
         if watched is self.app and event.type() == QEvent.Type.Quit and self._shutdown_state != "terminated":
             self.request_quit()
             return True
@@ -168,19 +164,7 @@ class ResidentApplication(QObject):
             self.desk_view, self.desk_controller = create_quick_desk(
                 quit_on_close=False,
             )
-            if self.desk_view is not None:
-                self.desk_view.installEventFilter(self)
-            self._sync_desk_shortcut()
         return self.desk_view, self.desk_controller
-
-    def _sync_desk_shortcut(self) -> None:
-        """Show the summon key on the desk only while macOS actually has it registered."""
-        if self.desk_controller is None:
-            return
-        manager = self.hotkey_manager
-        live = getattr(manager, "status", "") in ("started", "listener_started")
-        # The chord macOS actually holds, which is not read from config.global_hotkey.
-        self.desk_controller.set_shortcut_label(config.get_hotkey_display(manager.toggle_chord) if live else "")
 
     def request_quit(self, timeout: float = 3.0, on_finished: Optional[Any] = None) -> None:
         """
@@ -438,28 +422,6 @@ class ResidentApplication(QObject):
     def open_natal(self) -> None:
         self.open_natal_signal.emit()
 
-    def trigger_quicklook(self) -> None:
-        """Thread-safe trigger for quickLookSelection."""
-        self.quicklook_signal.emit()
-
-    @pyqtSlot()
-    def _do_quicklook_selection(self) -> None:
-        """Summon unified QtQuick Desk and run quickLookSelection."""
-        if self.is_quitting:
-            return
-        try:
-            view, controller = self._ensure_desk()
-            if view is None:
-                return
-            view.show()
-            view.raise_()
-            view.requestActivate()
-            activate_macos_app()
-            if controller is not None and hasattr(controller, "quickLookSelection"):
-                controller.quickLookSelection()
-        except Exception as e:
-            logger.error(f"Error triggering quickLookSelection on RAT Desk: {e}", exc_info=True)
-
     @pyqtSlot()
     def _do_open_natal(self) -> None:
         """Open Tarot / Reading view on the unified QtQuick Desk."""
@@ -642,8 +604,6 @@ class ResidentApplication(QObject):
             self.open_widget()
         elif cmd in ("astrology", "natal", "la-so", "reading"):
             self.open_natal()
-        elif cmd in ("quicklook", "selection"):
-            self.trigger_quicklook()
         else:
             self.toggle_spotlight()
 
@@ -656,13 +616,9 @@ class ResidentApplication(QObject):
         self.single_instance_server.command_received.connect(self._on_single_instance_command)
         self.single_instance_server.start()
 
-        # 1. Start Global Hotkey Manager with Carbon backend (no Accessibility permissions needed)
-        self.hotkey_manager = GlobalHotkeyManager(
-            on_trigger=self.toggle_spotlight,
-            on_quicklook=self.trigger_quicklook,
-        )
+        # 1. Start Global Hotkey Manager IMMEDIATELY
+        self.hotkey_manager = GlobalHotkeyManager(on_trigger=self.toggle_spotlight)
         self.hotkey_manager.start()
-        self._sync_desk_shortcut()
 
         # 2. Start System Tray (Menu Bar resident item)
         self.tray_manager = SystemTrayManager(
@@ -675,6 +631,18 @@ class ResidentApplication(QObject):
             on_quit=self.request_quit,
         )
         self.tray_manager.tray_icon.show()
+
+        from rat.os.hotkey import is_accessibility_trusted
+        if not is_accessibility_trusted():
+            QTimer.singleShot(
+                1200,
+                lambda: self.tray_manager.tray_icon.showMessage(
+                    "RAT — Phím tắt toàn cầu (Global Hotkey)",
+                    "Để dùng phím tắt ⌘ ⇧ Space trên mọi app, hãy click icon RAT trên Menu Bar và chọn 'Cấp quyền Phím tắt (Accessibility)'.",
+                    self.tray_manager.tray_icon.MessageIcon.Information,
+                    6000,
+                )
+            )
 
         # 3. Start Background Watcher (FSEvents realtime indexing) asynchronously
         if config.auto_watch:
@@ -701,32 +669,18 @@ class ResidentApplication(QObject):
         if config.auto_watch and config.indexed_directories:
             QTimer.singleShot(2500, self._start_semester_warmup)
 
-        self._open_initial_window()
-
-        return self.app.exec()
-
-    def _open_initial_window(self) -> None:
-        """5. Open initial window based on mode."""
+        # 5. Open initial window based on mode
         if self.mode == "finder":
             self.open_finder()
         elif self.mode in ("spotlight", "desk", "quick"):
             self.toggle_spotlight()
         elif self.mode == "daemon":
             logger.info("Running in pure background resident daemon mode (Menu Bar & Global Hotkey active).")
-            QTimer.singleShot(0, self._preload_desk)
 
-    def _preload_desk(self) -> None:
-        """Build the desk hidden, so the first hotkey after login answers at once instead of after seconds."""
-        if self.is_quitting:
-            return
-        try:
-            self._ensure_desk()
-        except Exception as e:
-            # The next hotkey tries again through the same path.
-            logger.warning(f"Could not prepare RAT Desk ahead of time: {e}")
+        return self.app.exec()
 
 
-def run_resident_app(mode: str = "finder") -> None:
+def run_resident_app(mode: str = "finder", *, reasoning_engine=None, allow_synthetic_policy=False) -> None:
     """Launch the resident system with strict single-instance enforcement."""
     app = QGuiApplication.instance() or QGuiApplication(sys.argv)
 
@@ -741,5 +695,9 @@ def run_resident_app(mode: str = "finder") -> None:
         logger.info(f"Cleaned up {killed} stale orphan rat process(es).")
 
     # 3. Launch the single resident application
-    res_app = ResidentApplication(mode=mode)
+    if reasoning_engine is None:
+        res_app = ResidentApplication(mode=mode)
+    else:
+        res_app = ResidentApplication(mode=mode, reasoning_engine=reasoning_engine,
+                                      allow_synthetic_policy=allow_synthetic_policy)
     sys.exit(res_app.run())

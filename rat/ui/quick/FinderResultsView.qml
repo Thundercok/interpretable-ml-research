@@ -84,37 +84,17 @@ ColumnLayout {
                             }
                         }
 
-                        // A pen stroke in the left gutter. Painted once per selection, never per frame.
-                        Canvas {
-                            objectName: "finderSelectionStroke_" + index
+                        Rectangle {
+                            id: selectionAccentBar
                             visible: hitCard.isSelected
-                            x: 4
-                            y: 3
-                            width: 7
-                            height: parent.height - 6
+                            width: 3
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.margins: 4
+                            radius: 1.5
+                            color: desk.accent
                             z: 2
-                            readonly property color inkColor: desk.accent
-                            onVisibleChanged: if (visible) requestPaint()
-                            onHeightChanged: if (visible) requestPaint()
-                            onInkColorChanged: if (visible) requestPaint()
-                            onPaint: {
-                                var ctx = getContext("2d")
-                                ctx.clearRect(0, 0, width, height)
-                                ctx.strokeStyle = inkColor
-                                ctx.lineCap = "round"
-                                ctx.lineJoin = "round"
-                                // The row index picks the wobble, so a stroke stays put but rows differ.
-                                var lean = index % 2 ? 1 : -1
-                                var mid = width / 2
-                                var seg = (height - 3) / 3
-                                ctx.lineWidth = 2.6
-                                ctx.beginPath()
-                                ctx.moveTo(mid - lean * 0.8, 1.5)
-                                ctx.quadraticCurveTo(mid + lean * 1.6, 1.5 + seg * 0.5, mid + lean * 0.3, 1.5 + seg)
-                                ctx.quadraticCurveTo(mid - lean * 1.5, 1.5 + seg * 1.5, mid - lean * 0.2, 1.5 + seg * 2)
-                                ctx.quadraticCurveTo(mid + lean * 1.2, 1.5 + seg * 2.5, mid + lean * 1.4, height - 1.5)
-                                ctx.stroke()
-                            }
                         }
 
                         RowLayout {
@@ -177,53 +157,40 @@ ColumnLayout {
                                     }
 
                                     Rectangle {
-                                        objectName: "finderHitKey_" + index
-                                        visible: index < 3
+                                        id: kindBadge
                                         radius: 4
-                                        color: desk.utilitySurface
-                                        border.width: 1
-                                        border.color: desk.edge
+                                        color: desk.backingColor
                                         implicitHeight: 18
-                                        implicitWidth: hitKeyText.implicitWidth + 8
+                                        implicitWidth: kindText.implicitWidth + 10
                                         Layout.alignment: Qt.AlignVCenter
                                         Label {
-                                            id: hitKeyText
+                                            id: kindText
                                             anchors.centerIn: parent
-                                            text: "⌘" + (index + 1)
+                                            text: modelData.kind === "application" ? "Ứng dụng" : (modelData.is_pdf ? "PDF" : "Tệp")
                                             textFormat: Text.PlainText
                                             color: desk.muted
                                             font.pixelSize: 10
+                                            font.weight: Font.Medium
                                         }
-                                    }
-
-                                    StickerLabel {
-                                        objectName: "finderKind_" + index
-                                        readonly property bool isApp: modelData.kind === "application"
-                                        text: isApp ? "Ứng dụng" : (modelData.is_pdf ? "PDF" : "Tệp")
-                                        fillColor: isApp ? desk.accent : modelData.is_pdf ? desk.pdfInk : desk.backingColor
-                                        textColor: isApp ? desk.accentText : modelData.is_pdf ? desk.paperColor : desk.ink
-                                        tilt: index % 2 ? 2 : -2
-                                        Layout.alignment: Qt.AlignVCenter
                                     }
                                 }
 
                                 Label {
                                     objectName: "finderMatchReason_" + index
-                                    text: modelData.row_detail || ""
+                                    text: (modelData.match_reason ? modelData.match_reason + " · " : "") + (modelData.display_path || modelData.path || modelData.snippet || "")
                                     textFormat: Text.PlainText
                                     color: desk.muted
                                     font.pixelSize: 11
-                                    elide: Text.ElideRight
+                                    elide: Text.ElideMiddle
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
-                                    ToolTip.delay: 500
                                     ToolTip.visible: hitMouseArea.containsMouse
                                     ToolTip.text: modelData.path || ""
                                 }
                                 Label {
                                     objectName: "finderContentExcerpt_" + index
-                                    visible: Boolean(modelData.excerpt)
-                                    text: modelData.excerpt || ""
+                                    visible: modelData.kind === "file" && Boolean(modelData.snippet)
+                                    text: "Trích từ chỉ mục · " + (modelData.snippet || "")
                                     textFormat: Text.PlainText
                                     color: desk.ink
                                     font.pixelSize: 11
@@ -359,16 +326,6 @@ ColumnLayout {
                 keyText: "⌘Y"
                 labelText: "Xem nhanh"
                 onClicked: desk.liveController.previewSelectedHit(desk.selectedFinderIndex)
-            }
-            KeycapBadge {
-                objectName: "finderCopyPathAction"
-                visible: bottomActionBar.selectedHit.kind === "file" && Boolean(bottomActionBar.selectedHit.path)
-                keyText: "⌘C"
-                labelText: "Chép đường dẫn"
-                onClicked: {
-                    desk.liveController.copySelectedHitPath(desk.selectedFinderIndex)
-                    editor.forceActiveFocus()
-                }
             }
             KeycapBadge {
                 visible: Boolean(bottomActionBar.selectedHit.path)

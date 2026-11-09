@@ -117,8 +117,18 @@ def deterministic_finder(
         app_candidates = list(catalog.search(app_query, limit=limit))
         seen_bundles = {a.bundle_id for a in app_candidates}
         try:
-            from rat.engine.app_search import AppSearch
-            app_searcher = AppSearch.from_catalog(catalog, embedder_source=None)
+            from rat.engine.app_search import AppSearch, app_descriptions
+            import numpy as np
+            app_searcher = AppSearch(None)
+            app_searcher._apps = [a for a in catalog.applications if not a.path.startswith('/System/Library/')]
+            app_searcher._names = [[name_key(n) for n in a.names] for a in app_searcher._apps]
+            owners, texts = [], []
+            for i, a in enumerate(app_searcher._apps):
+                for text in app_descriptions(a):
+                    owners.append(i); texts.append(text)
+            app_searcher._owners = np.array(owners, dtype=int)
+            app_searcher._words = [set(name_key(' '.join(app_descriptions(a))).split()) for a in app_searcher._apps]
+            app_searcher._matrix = np.empty((0, 384), dtype=np.float32)
             for res in app_searcher.search(app_query, limit=limit, floor=0.2):
                 if res['bundle_id'] not in seen_bundles and len(app_candidates) < limit:
                     for a in catalog.applications:
@@ -198,7 +208,7 @@ def deterministic_finder(
         # Fallback to name_walk_paths if no file hits found from metadata/database
         if not any(h.get("kind") == "file" for h in hits):
             from rat.engine.local_finder import name_walk_paths
-            roots = config.indexed_directories
+            roots = getattr(config, "watch_dirs", None)
             if roots:
                 valid_roots = [Path(r) for r in roots if Path(r).is_dir()]
             else:

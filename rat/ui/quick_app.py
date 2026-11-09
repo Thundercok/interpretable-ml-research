@@ -90,6 +90,8 @@ def bind_desk_close(view, controller, *, quit_on_close: bool = True):
 
 def create_quick_desk(
     *,
+    reasoning_engine=None,
+    allow_synthetic_policy=False,
     assistant_runtime=None,
     conversation=None,
     dark_mode=False,
@@ -103,8 +105,6 @@ def create_quick_desk(
     from PyQt6.QtGui import QFont, QGuiApplication
     from PyQt6.QtQuick import QQuickView, QQuickWindow
     from rat.ui.icon_provider import RatIconProvider
-    from rat.ui.image_drop import ImageDropFilter
-    from rat.ui.image_preview import ImagePreviewProvider
     from rat.ui.quick_pdf_controller import QuickPDFController
 
     app = QGuiApplication.instance() or QGuiApplication([sys.argv[0]])
@@ -112,9 +112,14 @@ def create_quick_desk(
     if sys.platform == "darwin":
         app.setFont(QFont("Helvetica Neue", 13))
 
+    eng = reasoning_engine or (app.property("ratReasoningEngine") if hasattr(app, "property") else None)
+    allow_synth = allow_synthetic_policy or (app.property("ratAllowSyntheticPolicy") is True if hasattr(app, "property") else False)
+
     controller = QuickPDFController(
         assistant_runtime=assistant_runtime,
         conversation=conversation,
+        reasoning_engine=eng,
+        allow_synthetic_policy=allow_synth,
     )
     if hasattr(app, "clipboard") and app.clipboard() is not None:
         controller.copyReady.connect(app.clipboard().setText)
@@ -123,7 +128,6 @@ def create_quick_desk(
     QQuickWindow.setDefaultAlphaBuffer(True)
     view = QQuickView()
     RatIconProvider.register(view.engine(), "icon")
-    view.engine().addImageProvider("input-preview", ImagePreviewProvider())
     surface_format = view.format()
     surface_format.setAlphaBufferSize(8)
     view.setFormat(surface_format)
@@ -138,7 +142,6 @@ def create_quick_desk(
         "liveController": controller,
         "darkMode": dark_mode or (app.styleHints().colorScheme() == Qt.ColorScheme.Dark if hasattr(app, "styleHints") else False),
         "reduceMotion": reduced_motion,
-        "residentDesk": not quit_on_close,
         "maxPaperHeight": max(220, min(460, available.height() - 280)),
         "mascotSource": QUrl.fromLocalFile(str(project / "rat/assets/rat_mascot_cutout.png")),
     })
@@ -148,8 +151,6 @@ def create_quick_desk(
             print(error.toString(), file=sys.stderr)
         controller.close()
         return None, None
-
-    image_drop = ImageDropFilter(view, controller)
 
     root = view.rootObject()
     width = min(720, available.width() - 48)
@@ -170,13 +171,14 @@ def create_quick_desk(
     view._resize_timer = resize_timer
     view._close_timer = close_timer
     view._controller = controller
-    view._image_drop = image_drop
     return view, controller
 
 
 def main(
     argv=None,
     *,
+    reasoning_engine=None,
+    allow_synthetic_policy=False,
     assistant_runtime=None,
     conversation=None,
 ):
@@ -205,6 +207,8 @@ def main(
     app = QGuiApplication.instance() or QGuiApplication([sys.argv[0]])
 
     view, controller = create_quick_desk(
+        reasoning_engine=reasoning_engine,
+        allow_synthetic_policy=allow_synthetic_policy,
         assistant_runtime=assistant_runtime,
         conversation=conversation,
         dark_mode=args.dark,

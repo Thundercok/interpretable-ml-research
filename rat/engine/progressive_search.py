@@ -177,29 +177,41 @@ class ProgressiveSearch:
         )
         return intent, effective
 
-    def _search_apps(self, query: str, limit: int = 3):
-        app_matches = []
-        seen_bundles = set()
+    def _search_apps(self, query: str, limit: int = 15):
+        app_matches = list(self.catalog.search(query, limit=limit))
+        seen_bundles = {a.bundle_id for a in app_matches}
         try:
-            from rat.engine.app_search import AppSearch
+            from rat.engine.app_search import AppSearch, app_descriptions
+            import numpy as np
             if getattr(self, '_app_search', None) is None:
                 embed_fn = getattr(self.semantic, 'embedder', None)
                 if embed_fn is not None and not callable(embed_fn):
                     embed_fn = lambda: getattr(self.semantic, 'embedder')
-                self._app_search = AppSearch.from_catalog(self.catalog, embedder_source=embed_fn)
-            for res in self._app_search.search(query, limit=limit, floor=0.5):
+                self._app_search = AppSearch(embed_fn)
+                self._app_search._apps = [a for a in self.catalog.applications if not a.path.startswith('/System/Library/')]
+                self._app_search._names = [[name_key(n) for n in a.names] for a in self._app_search._apps]
+                owners, texts = [], []
+                for i, a in enumerate(self._app_search._apps):
+                    for text in app_descriptions(a):
+                        owners.append(i); texts.append(text)
+                self._app_search._owners = np.array(owners, dtype=int)
+                self._app_search._words = [set(name_key(' '.join(app_descriptions(a))).split()) for a in self._app_search._apps]
+                if embed_fn:
+                    try:
+                        self._app_search._matrix = embed_fn().embed_texts(texts, batch_size=16) if texts else np.empty((0, 384), dtype=np.float32)
+                    except Exception:
+                        self._app_search._matrix = np.empty((0, 384), dtype=np.float32)
+                else:
+                    self._app_search._matrix = np.empty((0, 384), dtype=np.float32)
+            for res in self._app_search.search(query, limit=limit, floor=0.3):
                 if res['bundle_id'] not in seen_bundles and len(app_matches) < limit:
-                    app_obj = res.get('app')
-                    if app_obj is None:
-                        for a in self.catalog.applications:
-                            if a.bundle_id == res['bundle_id']:
-                                app_obj = a
-                                break
-                    if app_obj is not None:
-                        app_matches.append(app_obj)
-                        seen_bundles.add(res['bundle_id'])
-        except Exception as exc:
-            logger.warning("App search failed: %s", exc)
+                    for a in self.catalog.applications:
+                        if a.bundle_id == res['bundle_id']:
+                            app_matches.append(a)
+                            seen_bundles.add(a.bundle_id)
+                            break
+        except Exception:
+            pass
         return app_matches
 
     def initial(self, request):
@@ -213,7 +225,7 @@ class ProgressiveSearch:
         if intent.action == 'negated_open':
             return self._snapshot(request, 'lexical', (), complete=True, errors=(), intent=intent)
         if intent.action == 'open_app':
-            app_matches = list(self.catalog.search(intent.target_app_query, limit=request.limit))
+            app_matches = self._search_apps(intent.target_app_query, limit=request.limit)
             hits = [
                 SearchHit(
                     a.resource_id,
@@ -232,30 +244,24 @@ class ProgressiveSearch:
                 )
                 for a in app_matches
             ]
-            is_complete = bool(
-                self.semantic is None
-                or len(app_matches) >= request.limit
-                or (len(app_matches) == 1 and not intent.needs_clarification)
-            )
-            if is_complete:
-                if len(app_matches) > 1:
-                    intent = replace(
-                        intent,
-                        needs_clarification=True,
-                        clarification_reason=(
-                            f"Có {len(app_matches)} ứng dụng khớp với '{intent.target_app_query}'. "
-                            "Hãy chọn đúng bản cài đặt cần mở."
-                        ),
-                    )
-                elif len(app_matches) == 0:
-                    intent = replace(
-                        intent,
-                        needs_clarification=True,
-                        clarification_reason=(
-                            f"Không tìm thấy ứng dụng '{intent.target_app_query}' trong danh mục đã xác thực."
-                        ),
-                    )
-            return self._snapshot(request, 'lexical', hits, complete=is_complete, errors=(), intent=intent)
+            if len(app_matches) > 1:
+                intent = replace(
+                    intent,
+                    needs_clarification=True,
+                    clarification_reason=(
+                        f"Có {len(app_matches)} ứng dụng khớp với '{intent.target_app_query}'. "
+                        "Hãy chọn đúng bản cài đặt cần mở."
+                    ),
+                )
+            elif len(app_matches) == 0:
+                intent = replace(
+                    intent,
+                    needs_clarification=True,
+                    clarification_reason=(
+                        f"Không tìm thấy ứng dụng '{intent.target_app_query}' trong danh mục đã xác thực."
+                    ),
+                )
+            return self._snapshot(request, 'lexical', hits, complete=True, errors=(), intent=intent)
 
         hits, errors = [], []
         has_file_only_filter = bool(
@@ -285,7 +291,7 @@ class ProgressiveSearch:
                         else 'Khớp tên ứng dụng'
                     ),
                 )
-                for a in self.catalog.search(request.query, limit=request.limit)
+                for a in self._search_apps(request.query, limit=request.limit)
             )
         fts_query = intent.query_terms if intent.has_structured_constraints else request.query
         try:
@@ -335,135 +341,44 @@ class ProgressiveSearch:
         intent, eff_filters = self._resolve_intent_and_filters(request)
         hits, errors = list(initial.hits), list(initial.errors)
         seen = {h.resource_id for h in hits}
-        has_file_only_filter = bool(
-            eff_filters.extensions
-            or eff_filters.excluded_extensions
-            or eff_filters.date_min is not None
-            or eff_filters.date_max is not None
-            or eff_filters.date_max_exclusive is not None
-            or eff_filters.slide_rule
-            or eff_filters.report_rule
-            or eff_filters.sort != 'relevance'
-        )
-        if intent.action == 'open_app':
-            if self.catalog is not None:
-                app_query = intent.target_app_query
-                meaning_apps = self._search_apps(app_query, limit=3)
-                meaning_count = 0
-                for a in meaning_apps:
-                    if a.resource_id not in seen and len(hits) < request.limit and meaning_count < 3:
-                        hit = SearchHit(
-                            a.resource_id,
-                            'application',
-                            a.name,
-                            a.path,
-                            'application_catalog',
-                            snippet=a.path,
-                            bundle_id=a.bundle_id,
-                            version=a.version,
-                            match_reason='Khớp công dụng',
-                        )
-                        hits.append(hit)
-                        seen.add(a.resource_id)
-                        meaning_count += 1
-            if len(hits) > 1:
-                intent = replace(
-                    intent,
-                    needs_clarification=True,
-                    clarification_reason=(
-                        f"Có {len(hits)} ứng dụng khớp với '{intent.target_app_query}'. "
-                        "Hãy chọn đúng bản cài đặt cần mở."
-                    ),
-                )
-            elif len(hits) == 1:
-                intent = replace(intent, needs_clarification=False, clarification_reason='')
-            elif len(hits) == 0:
-                intent = replace(
-                    intent,
-                    needs_clarification=True,
-                    clarification_reason=(
-                        f"Không tìm thấy ứng dụng '{intent.target_app_query}' trong danh mục đã xác thực."
-                    ),
-                )
-            return self._snapshot(request, 'semantic', hits, complete=True, errors=errors, intent=intent)
-
-        will_run_apps = (not has_file_only_filter and intent.resource_kind != 'file') and self.catalog is not None
-        if will_run_apps:
-            app_slots = min(3, max(1, request.limit - 1)) if request.limit > 1 else 0
-            file_limit = request.limit - app_slots
-        else:
-            file_limit = request.limit
-
         try:
-            if callable(self.semantic):
-                for index, path in enumerate(self.semantic(request)):
-                    if request.cancelled.is_set():
-                        raise InterruptedError('finder_cancelled')
-                    if index >= 100 or len(hits) >= file_limit:
-                        break
-                    row = None
-                    try:
-                        if self.db is not None:
-                            connection = self.db.get_connection()
-                            connection.execute('PRAGMA busy_timeout=50')
-                            db_res = connection.execute(
-                                'SELECT file_path, file_name, file_ext, modified_at, created_at, '
-                                "substr(coalesce(summary, ''), 1, 200) AS summary FROM documents WHERE file_path = ?",
-                                (str(path),)).fetchone()
-                            row = dict(db_res) if db_res is not None else None
-                    except Exception as db_err:
-                        logger.debug("progressive_search main db lookup failed for %s: %s", path, db_err)
-                        row = None
-                    if row is None:
-                        from rat.engine.semantic_index import SemanticIndex
-                        if isinstance(self.semantic, SemanticIndex):
-                            p = Path(path)
-                            if p.is_file():
-                                try:
-                                    st = p.stat()
-                                    row = {
-                                        'file_path': str(p),
-                                        'file_name': p.name,
-                                        'file_ext': p.suffix.lower(),
-                                        'modified_at': st.st_mtime,
-                                        'created_at': getattr(st, 'st_birthtime', st.st_ctime),
-                                        'summary': '',
-                                    }
-                                except OSError:
-                                    continue
-                    if not row or not eff_filters.accepts(row):
-                        continue
-                    hit = self._file_hit(row, 'semantic_index', filters=eff_filters)
-                    if hit and hit.resource_id not in seen:
-                        hits.append(hit)
-                        seen.add(hit.resource_id)
-                        if len(hits) >= file_limit:
-                            break
+            for index, path in enumerate(self.semantic(request)):
+                if request.cancelled.is_set():
+                    raise InterruptedError('finder_cancelled')
+                if index >= 100 or len(hits) >= request.limit:
+                    break
+                connection = self.db.get_connection()
+                connection.execute('PRAGMA busy_timeout=50')
+                row = connection.execute(
+                    'SELECT file_path, file_name, file_ext, modified_at, created_at, '
+                    "substr(coalesce(summary, ''), 1, 200) AS summary FROM documents WHERE file_path = ?",
+                    (str(path),)).fetchone()
+                row = dict(row) if row is not None else None
+                if row is None:
+                    p = Path(path)
+                    if p.is_file():
+                        try:
+                            st = p.stat()
+                            row = {
+                                'file_path': str(p),
+                                'file_name': p.name,
+                                'file_ext': p.suffix.lower(),
+                                'modified_at': st.st_mtime,
+                                'created_at': getattr(st, 'st_birthtime', st.st_ctime),
+                                'summary': '',
+                            }
+                        except OSError:
+                            continue
+                if not row or not eff_filters.accepts(row):
+                    continue
+                hit = self._file_hit(row, 'semantic_index', filters=eff_filters)
+                if hit and hit.resource_id not in seen:
+                    hits.append(hit)
+                    seen.add(hit.resource_id)
         except InterruptedError:
             raise
         except Exception:
             errors.append('semantic_unavailable')
-
-        if will_run_apps:
-            app_query = intent.query_terms if intent.has_structured_constraints else request.query
-            meaning_apps = self._search_apps(app_query, limit=3)
-            meaning_count = 0
-            for a in meaning_apps:
-                if a.resource_id not in seen and len(hits) < request.limit and meaning_count < 3:
-                    hit = SearchHit(
-                        a.resource_id,
-                        'application',
-                        a.name,
-                        a.path,
-                        'application_catalog',
-                        snippet=a.path,
-                        bundle_id=a.bundle_id,
-                        version=a.version,
-                        match_reason='Khớp công dụng',
-                    )
-                    hits.append(hit)
-                    seen.add(a.resource_id)
-                    meaning_count += 1
         return self._snapshot(request, 'semantic', hits, complete=True, errors=errors, intent=initial.intent or intent)
 
     def snapshots(self, request):
