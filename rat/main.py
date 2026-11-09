@@ -56,7 +56,7 @@ def main() -> None:
             from rat.astrology.__main__ import main as natal_main
             natal_main()
             return
-        elif cmd in ("search", "index", "status", "ask", "ask-file", "dedup", "--help", "-h"):
+        elif cmd in ("search", "index", "status", "ask", "ask-file", "dedup", "review", "doctor", "--help", "-h"):
             cli_main()
             return
         elif cmd in ("init-shell", "shell"):

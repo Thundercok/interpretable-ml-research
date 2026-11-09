@@ -401,6 +401,73 @@ def cmd_review(
         console.print(f"\n[bold green]✓ Đã gửi nhận xét lên GitHub PR thành công![/bold green]")
 
 
+def cmd_doctor(as_json: bool = False) -> int:
+    """Run system diagnostics and verify environment, storage, models, and permissions."""
+    import json
+    from rat.os.diagnostics import collect_system_diagnostics
+    report = collect_system_diagnostics()
+
+    if as_json:
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+        return report["exit_code"]
+
+    status = report["overall_status"]
+    status_fmt = (
+        "[bold green]✓ PASS (All Systems Healthy)[/bold green]"
+        if status == "PASS"
+        else "[bold yellow]⚠ WARN (Minor Configuration or Permission Notices)[/bold yellow]"
+        if status == "WARN"
+        else "[bold red]✗ FAIL (Critical Issues Detected)[/bold red]"
+    )
+
+    console.print(Panel.fit(
+        f"[bold cyan]🩺 RAT System Doctor & Diagnostics[/bold cyan]\n"
+        f"Overall Health: {status_fmt}",
+        border_style="cyan"
+    ))
+
+    table = Table(title="Diagnostic Checks", border_style="dim")
+    table.add_column("Component", style="bold", width=16)
+    table.add_column("Status", width=10)
+    table.add_column("Details & Recommendations", style="white")
+
+    for comp_name, comp_data in report["checks"].items():
+        st = comp_data.get("status", "UNKNOWN")
+        st_badge = (
+            "[green]PASS[/green]" if st == "PASS"
+            else "[yellow]WARN[/yellow]" if st == "WARN"
+            else "[red]FAIL[/red]"
+        )
+        details = comp_data.get("details", {})
+        info_lines = []
+        if comp_name == "environment":
+            info_lines.append(f"Python {details.get('python_version')} on {details.get('platform')}")
+            if details.get("is_apple_silicon"):
+                info_lines.append("[cyan]Apple Silicon (arm64)[/cyan]")
+        elif comp_name == "database":
+            if details.get("exists"):
+                size_mb = details.get("size_bytes", 0) / (1024 * 1024)
+                info_lines.append(f"Integrity: {details.get('integrity')}, {details.get('total_documents')} documents (~{size_mb:.1f} MB)")
+            else:
+                info_lines.append("[yellow]No database file created yet[/yellow]")
+        elif comp_name == "configuration":
+            info_lines.append(f"Profile: [bold]{details.get('default_profile')}[/bold], Active folders: {details.get('active_directories_found')}")
+        elif comp_name == "models":
+            info_lines.append(f"Provider: {details.get('provider')}, SLM installed: {'Yes' if details.get('slm_model_installed') else 'No'}")
+        elif comp_name == "permissions":
+            info_lines.append(f"Accessibility: {'Granted' if details.get('trusted') else 'Not Granted'}")
+
+        if comp_data.get("message"):
+            info_lines.append(f"[yellow]{comp_data['message']}[/yellow]")
+        if comp_data.get("error"):
+            info_lines.append(f"[bold red]Error: {comp_data['error']}[/bold red]")
+
+        table.add_row(comp_name.capitalize(), st_badge, "\n".join(info_lines))
+
+    console.print(table)
+    return report["exit_code"]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="rat — Smart Local File Finder with Context Engineering & SLM")
     subparsers = parser.add_subparsers(dest="command")
@@ -442,6 +509,10 @@ def main() -> None:
     review_parser.add_argument("--repo", default=None, help="GitHub repo (e.g. owner/repo) if reviewing remote PR")
     review_parser.add_argument("--submit", action="store_true", help="Submit review comment to GitHub PR via gh CLI")
 
+    # Doctor command
+    doctor_parser = subparsers.add_parser("doctor", help="Run comprehensive diagnostic health checks")
+    doctor_parser.add_argument("--json", action="store_true", help="Output raw JSON schema")
+
     args = parser.parse_args()
 
     if args.command == "index":
@@ -459,6 +530,8 @@ def main() -> None:
         cmd_stats()
     elif args.command == "review":
         cmd_review(args.target, staged=args.staged, repo=args.repo, submit=args.submit)
+    elif args.command == "doctor":
+        raise SystemExit(cmd_doctor(as_json=args.json))
     else:
         parser.print_help()
 

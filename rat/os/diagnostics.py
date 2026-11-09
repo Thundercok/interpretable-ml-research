@@ -118,3 +118,143 @@ def run_session(argv=None):
                        final_state=last, isolation='fixture state/database; empty app/model catalogs; no model/network access')
         (session / 'session.json').write_text(json.dumps(outcome, indent=2, ensure_ascii=False) + '\n')
         qInstallMessageHandler(previous_handler)
+
+
+def collect_system_diagnostics() -> dict[str, any]:
+    """Collect structured health and environment telemetry with deterministic schema."""
+    report = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "overall_status": "PASS",
+        "checks": {},
+        "exit_code": 0,
+    }
+    has_warning = False
+    has_failure = False
+
+    # 1. Environment Check
+    env_info = {
+        "python_version": sys.version.split()[0],
+        "platform": sys.platform,
+        "is_macos": sys.platform == "darwin",
+    }
+    if sys.platform == "darwin":
+        import platform
+        env_info["machine"] = platform.machine()
+        env_info["is_apple_silicon"] = platform.machine().startswith("arm")
+
+    if sys.version_info >= (3, 11):
+        report["checks"]["environment"] = {"status": "PASS", "details": env_info}
+    else:
+        report["checks"]["environment"] = {
+            "status": "FAIL",
+            "details": env_info,
+            "error": "Python >= 3.11 required",
+        }
+        has_failure = True
+
+    # 2. Database & Storage Check
+    from rat.config import config
+    db_path = Path(config.db_path)
+    db_info = {
+        "path": str(db_path),
+        "exists": db_path.is_file(),
+    }
+    if db_path.is_file():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(db_path))
+            cur = conn.cursor()
+            cur.execute("PRAGMA integrity_check;")
+            integrity_row = cur.fetchone()
+            integrity = integrity_row[0] if integrity_row else "unknown"
+            cur.execute("SELECT count(*) FROM sqlite_master WHERE type='table';")
+            tables_count = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='documents';")
+            has_documents = cur.fetchone()[0] > 0
+            doc_count = 0
+            if has_documents:
+                cur.execute("SELECT count(*) FROM documents;")
+                doc_count = cur.fetchone()[0]
+            conn.close()
+
+            db_info["integrity"] = integrity
+            db_info["tables_count"] = tables_count
+            db_info["total_documents"] = doc_count
+            db_info["size_bytes"] = db_path.stat().st_size
+
+            if integrity == "ok":
+                report["checks"]["database"] = {"status": "PASS", "details": db_info}
+            else:
+                report["checks"]["database"] = {"status": "FAIL", "details": db_info, "error": f"Integrity check: {integrity}"}
+                has_failure = True
+        except Exception as e:
+            db_info["error"] = str(e)
+            report["checks"]["database"] = {"status": "FAIL", "details": db_info, "error": str(e)}
+            has_failure = True
+    else:
+        report["checks"]["database"] = {
+            "status": "WARN",
+            "details": db_info,
+            "message": "Index database not found. Run `python main.py index` to initialize.",
+        }
+        has_warning = True
+
+    # 3. Configuration Check
+    from rat.config import CONFIG_FILE
+    cfg_info = {
+        "config_path": str(CONFIG_FILE),
+        "exists": CONFIG_FILE.is_file(),
+        "default_profile": config.default_member_name,
+        "indexed_directories": config.indexed_directories,
+    }
+    valid_dirs = [d for d in config.indexed_directories if os.path.exists(d)]
+    cfg_info["active_directories_found"] = len(valid_dirs)
+    if valid_dirs:
+        report["checks"]["configuration"] = {"status": "PASS", "details": cfg_info}
+    else:
+        report["checks"]["configuration"] = {
+            "status": "WARN",
+            "details": cfg_info,
+            "message": "No configured directories found on disk.",
+        }
+        has_warning = True
+
+    # 4. Local Model Assets & Runtimes
+    from rat.engine.slm import slm_engine
+    model_info = {
+        "provider": config.llm_provider,
+        "use_slm": config.use_slm,
+        "slm_model_installed": slm_engine.is_model_installed(),
+    }
+    report["checks"]["models"] = {"status": "PASS", "details": model_info}
+
+    # 5. macOS Permissions & Identity
+    from rat.os.permissions import accessibility_status, runtime_identity
+    perm_status = accessibility_status(prompt=False)
+    perm_info = {
+        "trusted": perm_status.trusted,
+        "state": perm_status.state,
+        "identity": runtime_identity(),
+    }
+    if perm_status.trusted or sys.platform != "darwin":
+        report["checks"]["permissions"] = {"status": "PASS", "details": perm_info}
+    else:
+        report["checks"]["permissions"] = {
+            "status": "WARN",
+            "details": perm_info,
+            "message": "Accessibility permission not granted. Hotkeys may be restricted.",
+        }
+        has_warning = True
+
+    # Compute overall status
+    if has_failure:
+        report["overall_status"] = "FAIL"
+        report["exit_code"] = 1
+    elif has_warning:
+        report["overall_status"] = "WARN"
+        report["exit_code"] = 0
+    else:
+        report["overall_status"] = "PASS"
+        report["exit_code"] = 0
+
+    return report
