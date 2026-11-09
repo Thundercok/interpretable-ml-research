@@ -1,0 +1,122 @@
+[
+  {
+    "observed_unix": 1792800175.589026,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "",
+    "status": "Đang kiểm tra PDF…"
+  },
+  {
+    "observed_unix": 1792800176.1320262,
+    "draft": "",
+    "view": "none",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "",
+    "status": "arxiv_2506.22716_original.pdf · 25 trang PDF. Nhập từ khóa hoặc chọn số trang để đọc."
+  },
+  {
+    "observed_unix": 1792800184.2216609,
+    "draft": "Theo abstract của PDF này, BEST-Route quyết định hai điều gì? Trả lời hai ý đánh số, mỗi ý tối đa 12 từ tiếng Việt.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792800185.72188,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792800185.753004,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc tài liệu…"
+  },
+  {
+    "observed_unix": 1792800192.296341,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang tổng hợp thông tin…"
+  },
+  {
+    "observed_unix": 1792800192.42031,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đã đọc trích đoạn arxiv_2506.22716_original.pdf, đang sinh câu trả lời…"
+  },
+  {
+    "observed_unix": 1792800282.4807072,
+    "draft": " ",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Hết thời gian xử lý yêu cầu."
+  },
+  {
+    "observed_unix": 1792800556.634926,
+    "draft": " ",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Hết thời gian xử lý yêu cầu."
+  },
+  {
+    "observed_unix": 1792800560.594607,
+    "draft": " ",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Hết thời gian xử lý yêu cầu."
+  },
+  {
+    "observed_unix": 1792800569.754515,
+    "draft": "Chỉ ghi tên viết tắt của phương pháp trong tiêu đề PDF này.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang tìm từ khóa trong trang PDF 1–25…"
+  },
+  {
+    "observed_unix": 1792800573.3242948,
+    "draft": "Chỉ ghi tên viết tắt của phương pháp trong tiêu đề PDF này.",
+    "view": "search",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Đã tìm trang PDF 1–25 / 25. 0 trang khớp; đang hiện 0. 0 trang không có văn bản trích xuất. Tìm theo từ khóa; OCR chưa chạy."
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "attachment": "/Users/thundercock2/.codex/attachments/3e1de7b5-25ce-4519-a066-d53e21b338ae/Văn bản đã dán.txt",
+  "attachment_sha256": "d196b95c6df01a177a0eed1255548ea5db0208b9dd5aadb98914847a153fdd26",
+  "candidate_sha256": "f562493f03b20185a65b1d815efed8a257bfa012a73c747305acc919d70f7913",
+  "test_adjustment": "Only changed import target from rat.engine.context_snapshot to isolated external_candidate; all test bodies unchanged.",
+  "product_code_modified": false,
+  "shell_script_executed": false,
+  "inference_calls": 0
+}

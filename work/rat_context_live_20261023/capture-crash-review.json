@@ -1,0 +1,30 @@
+{
+  "process_exit_code": 139,
+  "pid": 3887,
+  "exception": {
+    "codes": "0x0000000000000001, 0x0000000000000080",
+    "rawCodes": [
+      1,
+      128
+    ],
+    "type": "EXC_BAD_ACCESS",
+    "signal": "SIGSEGV",
+    "subtype": "KERN_INVALID_ADDRESS at 0x0000000000000080"
+  },
+  "faulting_thread": "QSGRenderThread",
+  "main_thread_frames": [
+    "__psynch_cvwait",
+    "_pthread_cond_wait",
+    "unsymbolicated",
+    "QWaitCondition::wait(QMutex*, QDeadlineTimer)",
+    "unsymbolicated",
+    "meth_QQuickWindow_grabWindow(_object*, _object*)",
+    "cfunction_call",
+    "_PyObject_MakeTpCall",
+    "_PyEval_EvalFrameDefault",
+    "PyQtSlot::call(_object*, _object*) const",
+    "PyQtSlot::invoke(void**, _object*, void*, bool) const",
+    "PyQtSlotProxy::unislot(void**)"
+  ],
+  "cause_scope": "Capture observer called QQuickWindow.grabWindow after the view was hidden. No production grabWindow call exists on this path."
+}

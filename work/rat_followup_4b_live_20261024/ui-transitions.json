@@ -1,0 +1,32 @@
+[
+  {
+    "observed_unix": 1792780275.6560671,
+    "draft": "Viết hàm Python binary_search(a, target) trả index từ 0 hoặc -1. Chỉ gửi mã Python, giữ thụt dòng, không dùng Markdown, không cần ví dụ hay ghi chú.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792780275.7086878,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792780391.554477,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Hết thời gian xử lý yêu cầu."
+  }
+]

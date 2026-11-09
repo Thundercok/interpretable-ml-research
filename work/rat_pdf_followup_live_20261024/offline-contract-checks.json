@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "actual captured public reply retained as a whole pair",
+    "path and file revision isolation",
+    "other completed document breaks context",
+    "latest follow-up remains final message",
+    "only public role/content sent",
+    "input byte budget",
+    "oversize latest pair rejected",
+    "min preview preserves actual reply newline"
+  ],
+  "reference_real_conversation": "work/rat_real_pdf_live_20261024/scope_label_retest/conversation.json"
+}

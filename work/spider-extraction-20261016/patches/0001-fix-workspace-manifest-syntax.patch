@@ -1,0 +1,14 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 54e99f5..1234567 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -8,9 +8,6 @@ members = [
+     "spider_agent_types",
+     "spider_agent_html",
+     "spider_mcp",
+-    [[example]]
+-name = "cv_job_crawler"
+-path = "cv_job_crawler.rs"
+     # internal
+     "examples",
+     "benches"]

@@ -1,0 +1,24 @@
+{
+  "live_desktop": true,
+  "model": "qwen2.5:1.5b",
+  "canned_assistant_answers": false,
+  "min_code_three_lines_monospace": true,
+  "full_unfenced_python_indentation": true,
+  "copy_public_raw_answer_observed": true,
+  "stop_cancels_server_task": true,
+  "draft_survives_stop": true,
+  "latest_request_after_historical_context": true,
+  "model_semantic_acceptance": false,
+  "incorrect_index_in_turn_1": true,
+  "first_index_correction_failed_turns": [
+    3,
+    4
+  ],
+  "empty_response_error_label": "implemented; not reproduced live after this change",
+  "close_live_exit_code": 0,
+  "close_artifacts": "../rat_close_live_20261023/",
+  "observer_crash_preserved": "capture-crash-review.json",
+  "static_compile": "passed",
+  "git_diff_check": "passed",
+  "research_stage_0": "unchanged"
+}

@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12",
+    "-m",
+    "pytest",
+    "test_candidate_supplied.py",
+    "--confcutdir=.",
+    "-p",
+    "no:cacheprovider",
+    "-q",
+    "--tb=short"
+  ],
+  "cwd": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/gemini-b1-candidate-review-20261014",
+  "exit_code": 1,
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"
+  },
+  "scope": "Externally supplied tests, isolated module import only; no production or legacy regression tests run."
+}

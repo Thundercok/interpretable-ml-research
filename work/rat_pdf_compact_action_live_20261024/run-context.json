@@ -1,0 +1,12 @@
+{
+  "pdf_path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+  "source_url": "https://arxiv.org/pdf/2506.22716",
+  "sha256": "9746346dc6e6552ccdd20158a0eb4b01e927a3cb46242ebaf3d36a9d3b611d9c",
+  "interaction_plan": [
+    "min-mode Hỏi PDF button",
+    "composer Command Return follow-up"
+  ],
+  "model_call_cap": 2,
+  "mechanical_checks": "12 passed; git diff --check passed",
+  "desktop_status": "completed; first button model timeout, corrected shortcut succeeded; see acceptance-summary.json"
+}

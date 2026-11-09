@@ -1,0 +1,221 @@
+[
+  {
+    "turn_ref": {
+      "conversation_id": "conv-58e7a1dfb909",
+      "turn_id": "turn-1",
+      "kind": "chat",
+      "turn_number": 1,
+      "target_turn_id": null,
+      "target_artifact_id": null,
+      "target_revision": null
+    },
+    "turn_id": "turn-1",
+    "conversation_id": "conv-58e7a1dfb909",
+    "turn_number": 1,
+    "kind": "chat",
+    "target_turn_id": null,
+    "target_artifact_id": null,
+    "target_revision": null,
+    "execution_id": "exec-2eb0ac538907",
+    "query": "Từ abstract của PDF đang chọn, trả lời tiếng Việt bằng đúng 2 ý đánh số: 1. Kỹ thuật được đề xuất; 2. Kết quả chính. Mỗi ý một câu, tối đa 22 từ.",
+    "answer": "1. Kỹ thuật được đề xuất là sử dụng chain-of-thought prompting với vài ví dụ minh họa.  \n2. Kết quả chính là cải thiện đáng kể khả năng suy luận phức tạp trên nhiều nhiệm vụ.",
+    "status": "completed",
+    "artifact_refs": [
+      {
+        "id": "art-0242a0f8631c429592ee55416348dcb3",
+        "kind": "document_content",
+        "revision": 1,
+        "payload": {
+          "found": true,
+          "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "content": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Research, Brain Team\n{jasonwei,dennyzhou}@google.com\nAbstract\nWe explore how generating a chain of thought—a series of intermediate reasoning\nsteps—significantly improves the ability of large language models to perform\ncomplex reasoning. In particular, we show how such reasoning abilities emerge\nnaturally in sufficiently large language models via a simple method called chain-of-\nthought prompting, where a few chain of thought demonstrations are provided as\nexemplars in prompting.\nExperiments on three large language models show that chain-of-thought prompting\nimproves performance on a range of arithmetic, commonsense, and symbolic\nreasoning tasks. The empirical gains can be striking. For instance, prompting a\nPaLM 540B with just eight chain-of-thought exemplars achieves state-of-the-art\naccuracy on the GSM8K benchmark of math word problems, surpassing even\nfinetuned GPT-3 with a verifier.\nStandard Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nChain-of-Thought Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: Roger started with 5 balls. 2 cans of 3 tennis balls\neach is 6 tennis balls. 5 + 6 = 11. The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nModel Output Model Output\nA: The answer is 27.\nA: The cafeteria had 23 apples originally. They used\n20 to make lunch. So they had 23 - 20 = 3. They\nbought 6 more apples, so they have 3 + 6 = 9. The\nanswer is 9.\nFigure 1: Chain-of-thought prompting enables large language models to tackle complex arithmetic,\ncommonsense, and symbolic reasoning tasks. Chain-of-thought reasoning processes are highlighted.\n36th Conference on Neural Information Processing Systems (NeurIPS 2022).\n\n--- Page 2 ---\n1 Introduction\nFinetuned GPT-3 175B\nPrior best\nPaLM 540B: standard prompting\nPaLM 540B: chain-of-thought prompting\n55\n57\n33\n18\nThe NLP landscape has recently been revolutionized by\nlanguage models (Peters et al., 2018; Devlin et al., 2019;\nBrown et al., 2020, inter alia). Scaling up the size of lan-\nguage models has been shown to confer a range of benefits,\nsuch as improved performance and sample efficiency (Ka-\nplan et al., 2020; Brown et al., 2020, inter alia). However,\n100\nscaling up model size alone has not proved sufficient for\nachieving high performance on challenging tasks such as\narithmetic, commonsense, and symbolic reasoning (Rae\net al., 2021).\nThis work exp",
+          "total_chars": 88994,
+          "truncated": true
+        },
+        "inputs": {
+          "file_path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "max_chars": 3000
+        },
+        "provenance": {
+          "operation_name": "read_document",
+          "owner_turn_id": "turn-1",
+          "execution_id": "exec-2eb0ac538907"
+        },
+        "title": "Read an indexed PDF, PPTX, DOCX, TXT or MD file",
+        "status": "ready",
+        "created_at": 1792797839.4724128
+      }
+    ],
+    "note_ids": [],
+    "note_event_ids": [],
+    "task_state": {
+      "document_scope": {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "sha256": "7d9f878c23b460e4566aa4ec9201b1abfb3b8faefb2b1356e411cb90fef72a12"
+      }
+    },
+    "reconciliation": null,
+    "reconciliation_status": "unchecked",
+    "turn_contract": null,
+    "source_refs": [
+      {
+        "type": "document",
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "snippet": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Rese",
+        "read": true,
+        "truncated": true,
+        "read_chars": 3000,
+        "total_chars": 88994
+      }
+    ],
+    "answer_verification_status": "UNKNOWN"
+  },
+  {
+    "turn_ref": {
+      "conversation_id": "conv-58e7a1dfb909",
+      "turn_id": "turn-2",
+      "kind": "chat",
+      "turn_number": 2,
+      "target_turn_id": null,
+      "target_artifact_id": null,
+      "target_revision": null
+    },
+    "turn_id": "turn-2",
+    "conversation_id": "conv-58e7a1dfb909",
+    "turn_number": 2,
+    "kind": "chat",
+    "target_turn_id": null,
+    "target_artifact_id": null,
+    "target_revision": null,
+    "execution_id": "exec-c08d4d2c332f",
+    "query": "Chỉ rút gọn ý thứ hai vừa rồi còn tối đa 12 từ. Không nhắc lại ý thứ nhất.",
+    "answer": "2. Cải thiện đáng kể khả năng suy luận phức tạp.",
+    "status": "completed",
+    "artifact_refs": [
+      {
+        "id": "art-1b61d52e76b84e308e4fff986d9d1599",
+        "kind": "document_content",
+        "revision": 1,
+        "payload": {
+          "found": true,
+          "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "content": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Research, Brain Team\n{jasonwei,dennyzhou}@google.com\nAbstract\nWe explore how generating a chain of thought—a series of intermediate reasoning\nsteps—significantly improves the ability of large language models to perform\ncomplex reasoning. In particular, we show how such reasoning abilities emerge\nnaturally in sufficiently large language models via a simple method called chain-of-\nthought prompting, where a few chain of thought demonstrations are provided as\nexemplars in prompting.\nExperiments on three large language models show that chain-of-thought prompting\nimproves performance on a range of arithmetic, commonsense, and symbolic\nreasoning tasks. The empirical gains can be striking. For instance, prompting a\nPaLM 540B with just eight chain-of-thought exemplars achieves state-of-the-art\naccuracy on the GSM8K benchmark of math word problems, surpassing even\nfinetuned GPT-3 with a verifier.\nStandard Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nChain-of-Thought Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: Roger started with 5 balls. 2 cans of 3 tennis balls\neach is 6 tennis balls. 5 + 6 = 11. The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nModel Output Model Output\nA: The answer is 27.\nA: The cafeteria had 23 apples originally. They used\n20 to make lunch. So they had 23 - 20 = 3. They\nbought 6 more apples, so they have 3 + 6 = 9. The\nanswer is 9.\nFigure 1: Chain-of-thought prompting enables large language models to tackle complex arithmetic,\ncommonsense, and symbolic reasoning tasks. Chain-of-thought reasoning processes are highlighted.\n36th Conference on Neural Information Processing Systems (NeurIPS 2022).\n\n--- Page 2 ---\n1 Introduction\nFinetuned GPT-3 175B\nPrior best\nPaLM 540B: standard prompting\nPaLM 540B: chain-of-thought prompting\n55\n57\n33\n18\nThe NLP landscape has recently been revolutionized by\nlanguage models (Peters et al., 2018; Devlin et al., 2019;\nBrown et al., 2020, inter alia). Scaling up the size of lan-\nguage models has been shown to confer a range of benefits,\nsuch as improved performance and sample efficiency (Ka-\nplan et al., 2020; Brown et al., 2020, inter alia). However,\n100\nscaling up model size alone has not proved sufficient for\nachieving high performance on challenging tasks such as\narithmetic, commonsense, and symbolic reasoning (Rae\net al., 2021).\nThis work exp",
+          "total_chars": 88994,
+          "truncated": true
+        },
+        "inputs": {
+          "file_path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "max_chars": 3000
+        },
+        "provenance": {
+          "operation_name": "read_document",
+          "owner_turn_id": "turn-2",
+          "execution_id": "exec-c08d4d2c332f"
+        },
+        "title": "Read an indexed PDF, PPTX, DOCX, TXT or MD file",
+        "status": "ready",
+        "created_at": 1792797896.9704478
+      }
+    ],
+    "note_ids": [],
+    "note_event_ids": [],
+    "task_state": {
+      "document_scope": {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "sha256": "7d9f878c23b460e4566aa4ec9201b1abfb3b8faefb2b1356e411cb90fef72a12"
+      }
+    },
+    "reconciliation": null,
+    "reconciliation_status": "unchecked",
+    "turn_contract": null,
+    "source_refs": [
+      {
+        "type": "document",
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "snippet": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Rese",
+        "read": true,
+        "truncated": true,
+        "read_chars": 3000,
+        "total_chars": 88994
+      }
+    ],
+    "answer_verification_status": "UNKNOWN"
+  },
+  {
+    "turn_ref": {
+      "conversation_id": "conv-58e7a1dfb909",
+      "turn_id": "turn-3",
+      "kind": "chat",
+      "turn_number": 3,
+      "target_turn_id": null,
+      "target_artifact_id": null,
+      "target_revision": null
+    },
+    "turn_id": "turn-3",
+    "conversation_id": "conv-58e7a1dfb909",
+    "turn_number": 3,
+    "kind": "chat",
+    "target_turn_id": null,
+    "target_artifact_id": null,
+    "target_revision": null,
+    "execution_id": "exec-645fe7f2873e",
+    "query": "Giải thích rõ hơn ý đó trong đúng một câu, tối đa 25 từ tiếng Việt.",
+    "answer": "Phương pháp này giúp mô hình suy luận rõ ràng hơn qua các bước trung gian.",
+    "status": "completed",
+    "artifact_refs": [
+      {
+        "id": "art-82c1e423469347eb9f08776d0bcfb930",
+        "kind": "document_content",
+        "revision": 1,
+        "payload": {
+          "found": true,
+          "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "content": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Research, Brain Team\n{jasonwei,dennyzhou}@google.com\nAbstract\nWe explore how generating a chain of thought—a series of intermediate reasoning\nsteps—significantly improves the ability of large language models to perform\ncomplex reasoning. In particular, we show how such reasoning abilities emerge\nnaturally in sufficiently large language models via a simple method called chain-of-\nthought prompting, where a few chain of thought demonstrations are provided as\nexemplars in prompting.\nExperiments on three large language models show that chain-of-thought prompting\nimproves performance on a range of arithmetic, commonsense, and symbolic\nreasoning tasks. The empirical gains can be striking. For instance, prompting a\nPaLM 540B with just eight chain-of-thought exemplars achieves state-of-the-art\naccuracy on the GSM8K benchmark of math word problems, surpassing even\nfinetuned GPT-3 with a verifier.\nStandard Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nChain-of-Thought Prompting\nModel Input\nQ: Roger has 5 tennis balls. He buys 2 more cans of\ntennis balls. Each can has 3 tennis balls. How many\ntennis balls does he have now?\nA: Roger started with 5 balls. 2 cans of 3 tennis balls\neach is 6 tennis balls. 5 + 6 = 11. The answer is 11.\nQ: The cafeteria had 23 apples. If they used 20 to\nmake lunch and bought 6 more, how many apples\ndo they have?\nModel Output Model Output\nA: The answer is 27.\nA: The cafeteria had 23 apples originally. They used\n20 to make lunch. So they had 23 - 20 = 3. They\nbought 6 more apples, so they have 3 + 6 = 9. The\nanswer is 9.\nFigure 1: Chain-of-thought prompting enables large language models to tackle complex arithmetic,\ncommonsense, and symbolic reasoning tasks. Chain-of-thought reasoning processes are highlighted.\n36th Conference on Neural Information Processing Systems (NeurIPS 2022).\n\n--- Page 2 ---\n1 Introduction\nFinetuned GPT-3 175B\nPrior best\nPaLM 540B: standard prompting\nPaLM 540B: chain-of-thought prompting\n55\n57\n33\n18\nThe NLP landscape has recently been revolutionized by\nlanguage models (Peters et al., 2018; Devlin et al., 2019;\nBrown et al., 2020, inter alia). Scaling up the size of lan-\nguage models has been shown to confer a range of benefits,\nsuch as improved performance and sample efficiency (Ka-\nplan et al., 2020; Brown et al., 2020, inter alia). However,\n100\nscaling up model size alone has not proved sufficient for\nachieving high performance on challenging tasks such as\narithmetic, commonsense, and symbolic reasoning (Rae\net al., 2021).\nThis work exp",
+          "total_chars": 88994,
+          "truncated": true
+        },
+        "inputs": {
+          "file_path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+          "max_chars": 3000
+        },
+        "provenance": {
+          "operation_name": "read_document",
+          "owner_turn_id": "turn-3",
+          "execution_id": "exec-645fe7f2873e"
+        },
+        "title": "Read an indexed PDF, PPTX, DOCX, TXT or MD file",
+        "status": "ready",
+        "created_at": 1792797927.261647
+      }
+    ],
+    "note_ids": [],
+    "note_event_ids": [],
+    "task_state": {
+      "document_scope": {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "sha256": "7d9f878c23b460e4566aa4ec9201b1abfb3b8faefb2b1356e411cb90fef72a12"
+      }
+    },
+    "reconciliation": null,
+    "reconciliation_status": "unchecked",
+    "turn_contract": null,
+    "source_refs": [
+      {
+        "type": "document",
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_real_pdf_live_20261024/Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "filename": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf",
+        "snippet": "--- Page 1 ---\narXiv:2201.11903v6 [cs.CL] 10 Jan 2023\nChain-of-Thought Prompting Elicits Reasoning\nin Large Language Models\nJason Wei Xuezhi Wang Dale Schuurmans Maarten Bosma\nBrian Ichter Fei Xia Ed H. Chi Quoc V. Le Denny Zhou\nGoogle Rese",
+        "read": true,
+        "truncated": true,
+        "read_chars": 3000,
+        "total_chars": 88994
+      }
+    ],
+    "answer_verification_status": "UNKNOWN"
+  }
+]

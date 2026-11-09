@@ -1,0 +1,62 @@
+[
+  {
+    "observed_unix": 1792779794.9710789,
+    "draft": "Viết hàm Python binary_search(a, target) trả index từ 0 hoặc -1. Chỉ gửi mã Python, giữ thụt dòng, không dùng Markdown, không cần ví dụ hay ghi chú.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792779795.013302,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792779827.724343,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792779854.088563,
+    "draft": "Change that function to return the FIRST index when target repeats. Return only raw Python source, without Markdown fences or examples.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792779854.127638,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792779864.302412,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  }
+]

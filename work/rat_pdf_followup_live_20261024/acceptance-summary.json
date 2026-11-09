@@ -1,0 +1,34 @@
+{
+  "real_model_calls": 3,
+  "prompt_tokens": 3474,
+  "generated_tokens": 87,
+  "model_wall_ms": [
+    24801.91395781003,
+    1553.7274579983205,
+    3090.332959080115
+  ],
+  "online_total_ms": [
+    28588.152,
+    2248.309,
+    3888.125
+  ],
+  "history_turns": [
+    0,
+    1,
+    2
+  ],
+  "pdf_hash_unchanged": true,
+  "sources_unchanged": true,
+  "qml_warnings": [],
+  "ui_exit_code": 0,
+  "manual_review": {
+    "rewrite_second_point": "observed correct referent, only second point, 10 Vietnamese whitespace-separated words excluding numbering",
+    "explain_that_point": "partial: receives both prior turns, answer remains generic; no complete quality pass"
+  },
+  "verification_status": "UNKNOWN",
+  "owned_ollama_pid": 11769,
+  "owned_ollama_exit_code": 0,
+  "prompt_scope_tests": "5 passed",
+  "compile_check": "passed",
+  "diff_check": "passed"
+}

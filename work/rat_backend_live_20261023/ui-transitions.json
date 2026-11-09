@@ -1,0 +1,142 @@
+[
+  {
+    "observed_unix": 1792770091.960362,
+    "draft": "Giải thích tìm kiếm nhị phân với mảng [2, 4, 7, 9, 13] để tìm 9. Nêu từng bước thật ngắn, dùng index từ 0, chưa cần code.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770092.008981,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770183.621818,
+    "draft": "Viết code từ ví dụ trên.",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Hết thời gian xử lý yêu cầu."
+  },
+  {
+    "observed_unix": 1792770222.4984589,
+    "draft": "Viết hàm Python binary_search(a, target), trả index từ 0 hoặc -1. Chỉ cần code.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770222.543756,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770290.797448,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đã dừng yêu cầu. Nội dung đang nhập vẫn được giữ."
+  },
+  {
+    "observed_unix": 1792770324.880985,
+    "draft": "Giải thích chi tiết tìm kiếm nhị phân và độ phức tạp thời gian, cho ba ví dụ.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770324.9078379,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770328.9534988,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đã dừng yêu cầu. Nội dung đang nhập vẫn được giữ."
+  },
+  {
+    "observed_unix": 1792770380.595606,
+    "draft": "Write only a Python function binary_search(a, target), returning the zero-based index or -1. No explanation and no saving notes.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770380.6420321,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770440.977726,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770446.21262,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792770493.7112908,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  }
+]

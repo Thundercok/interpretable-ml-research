@@ -1,0 +1,521 @@
+{
+  "scope": "Only these actually generated functions and fixed cases; not a model-quality study or in-app verifier.",
+  "observations": [
+    {
+      "conversation": "rat_backend_live_preview_20261023",
+      "turn_id": "turn-2",
+      "answer_sha256": "b3484c039561e3bb6cf7af82602f237e28b7bea45ee5718ae74d5e7a39f89f85",
+      "first_index_required": false,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": true
+    },
+    {
+      "conversation": "rat_backend_live_preview_20261023",
+      "turn_id": "turn-3",
+      "answer_sha256": "b3484c039561e3bb6cf7af82602f237e28b7bea45ee5718ae74d5e7a39f89f85",
+      "first_index_required": true,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": false
+    },
+    {
+      "conversation": "rat_backend_live_preview_20261023",
+      "turn_id": "turn-4",
+      "answer_sha256": "b3484c039561e3bb6cf7af82602f237e28b7bea45ee5718ae74d5e7a39f89f85",
+      "first_index_required": true,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": false
+    },
+    {
+      "conversation": "rat_context_live_20261023",
+      "turn_id": "turn-2",
+      "answer_sha256": "03ad412170003aebabbcc23331aaf2f2b5d1ab62951a2bcd08e6ea7bce03233a",
+      "first_index_required": false,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": true
+    },
+    {
+      "conversation": "rat_context_live_20261023",
+      "turn_id": "turn-3",
+      "answer_sha256": "03ad412170003aebabbcc23331aaf2f2b5d1ab62951a2bcd08e6ea7bce03233a",
+      "first_index_required": true,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": false
+    },
+    {
+      "conversation": "rat_context_live_20261023",
+      "turn_id": "turn-4",
+      "answer_sha256": "03ad412170003aebabbcc23331aaf2f2b5d1ab62951a2bcd08e6ea7bce03233a",
+      "first_index_required": true,
+      "checks": [
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 9,
+          "actual": 3,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            4,
+            7,
+            9,
+            13
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [],
+          "target": 4,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 9,
+          "actual": 0,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            9
+          ],
+          "target": 6,
+          "actual": -1,
+          "valid_for_requested_behavior": true
+        },
+        {
+          "array": [
+            2,
+            2,
+            2
+          ],
+          "target": 2,
+          "actual": 1,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            1,
+            2,
+            2,
+            2,
+            3
+          ],
+          "target": 2,
+          "actual": 2,
+          "valid_for_requested_behavior": false
+        },
+        {
+          "array": [
+            2,
+            4
+          ],
+          "target": 4,
+          "actual": 1,
+          "valid_for_requested_behavior": true
+        }
+      ],
+      "all_passed": false
+    }
+  ]
+}

@@ -4,3 +4,23 @@
 *.toc
 *.synctex.gz
 .DS_Store
+
+# Python & Environment
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+.rat/
+build/
+dist/
+*.dmg
+
+# Pinned models restored by tools
+rat/assets/translation/*/model/
+rat/assets/translation/*/sentencepiece.model
+rat/assets/embedding/models--*/

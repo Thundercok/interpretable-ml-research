@@ -1,0 +1,262 @@
+[
+  {
+    "observed_unix": 1792797819.706344,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "",
+    "status": "Đang kiểm tra PDF…"
+  },
+  {
+    "observed_unix": 1792797820.259497,
+    "draft": "",
+    "view": "none",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "",
+    "status": "Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf · 43 trang PDF. Nhập từ khóa hoặc chọn số trang để đọc."
+  },
+  {
+    "observed_unix": 1792797835.752379,
+    "draft": "Từ abstract của PDF đang chọn, trả lời tiếng Việt bằng đúng 2 ý đánh số: 1. Kỹ thuật được đề xuất; 2. Kết quả chính. Mỗi ý một câu, tối đa 22 từ.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797835.764884,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797836.6208901,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc tài liệu…"
+  },
+  {
+    "observed_unix": 1792797839.476156,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang tổng hợp thông tin…"
+  },
+  {
+    "observed_unix": 1792797839.542346,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đã đọc trích đoạn Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf, đang sinh câu trả lời…"
+  },
+  {
+    "observed_unix": 1792797864.4209962,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797874.930326,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797887.159292,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797896.2761862,
+    "draft": "Chỉ rút gọn ý thứ hai vừa rồi còn tối đa 12 từ. Không nhắc lại ý thứ nhất.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797896.6820369,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797896.687395,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang đọc tài liệu…"
+  },
+  {
+    "observed_unix": 1792797896.972152,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang tổng hợp thông tin…"
+  },
+  {
+    "observed_unix": 1792797896.981728,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đã đọc trích đoạn Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf, đang sinh câu trả lời…"
+  },
+  {
+    "observed_unix": 1792797898.5370162,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797912.675966,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797915.871999,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797926.4673579,
+    "draft": "Giải thích rõ hơn ý đó trong đúng một câu, tối đa 25 từ tiếng Việt.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797926.9427578,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792797926.947901,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang đọc tài liệu…"
+  },
+  {
+    "observed_unix": 1792797927.2726579,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang tổng hợp thông tin…"
+  },
+  {
+    "observed_unix": 1792797927.279267,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đã đọc trích đoạn Wei_et_al_2022_Chain_of_Thought_arXiv_2201.11903v6.pdf, đang sinh câu trả lời…"
+  },
+  {
+    "observed_unix": 1792797930.373566,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-3",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792797977.186858,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792798002.720669,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  }
+]

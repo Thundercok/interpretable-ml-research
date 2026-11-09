@@ -1,0 +1,33 @@
+[
+  {
+    "turn_ref": {
+      "conversation_id": "conv-ac691c9809be",
+      "turn_id": "turn-1",
+      "kind": "chat",
+      "turn_number": 1,
+      "target_turn_id": null,
+      "target_artifact_id": null,
+      "target_revision": null
+    },
+    "turn_id": "turn-1",
+    "conversation_id": "conv-ac691c9809be",
+    "turn_number": 1,
+    "kind": "chat",
+    "target_turn_id": null,
+    "target_artifact_id": null,
+    "target_revision": null,
+    "execution_id": "exec-f597cee67d40",
+    "query": "Viết hàm Python binary_search(a, target) trả index từ 0 hoặc -1. Chỉ gửi mã Python, giữ thụt dòng, không dùng Markdown, không cần ví dụ hay ghi chú.",
+    "answer": "",
+    "status": "failed",
+    "artifact_refs": [],
+    "note_ids": [],
+    "note_event_ids": [],
+    "task_state": {},
+    "reconciliation": null,
+    "reconciliation_status": "unchecked",
+    "turn_contract": null,
+    "source_refs": [],
+    "answer_verification_status": "UNKNOWN"
+  }
+]

@@ -1,0 +1,144 @@
+{
+  "snapshot": {
+    "phase": "result",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "hasWorkbench": true,
+    "view": "search",
+    "fileName": "arxiv_2506.22716_original.pdf",
+    "pageCount": 25,
+    "activeContext": {
+      "type": "pdf",
+      "title": "arxiv_2506.22716_original.pdf",
+      "subtitle": "25 trang",
+      "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf"
+    },
+    "title": "Tìm thấy 16 trang khớp.",
+    "status": "Đã tìm trang PDF 1–25 / 25. 16 trang khớp; đang hiện 5. 0 trang không có văn bản trích xuất. Tìm theo từ khóa; OCR chưa chạy.",
+    "query": "BEST-Route",
+    "userQuery": "",
+    "answerText": "",
+    "answerExcerpt": "",
+    "answerPreviewIsCode": false,
+    "answerOutcome": "unknown",
+    "answerHtml": "",
+    "answerHtmlDark": "",
+    "answerSources": [],
+    "answerReadScope": "",
+    "answerVerification": "UNKNOWN",
+    "telemetry": {},
+    "turnId": "",
+    "executionId": "",
+    "items": [
+      {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+        "filename": "arxiv_2506.22716_original.pdf",
+        "page": 15,
+        "page_label": "15",
+        "page_count": 25,
+        "page_numbering": "pdf_1_based",
+        "extraction": "pdf_text",
+        "snippet": "Cost\nReduction\n(%)\nResponse Quality Drop w.r.t. always using GPT-4o (%)\nBLEU ROUGE\nN-label BEST-Route N-label BEST-Route\n10 6.57 3.61 6.10 3.88\n20 13.13 6.07 11.65 7.27\n40 25.80 12.76 22.26 15.78\n60 31.70 18.07 27.62 21.97\nN-class 0.2% cost reduction with 0.7% quality drop. 0.2% cost reduction with 0.9% quality drop.\nClustering 0% cost reduction with 0% quality drop. 0% cost reduction with 0% quality drop.\nTable 4: Routing performance under BLEU and ROUGE. Performance drops are computed w.r.t.\nalways using the reference model (i.e., GPT-4o).\n5.4 Router Latency\nWe measure the latency o",
+        "snippet_start": 0,
+        "matched_terms": [
+          "best",
+          "route"
+        ],
+        "phrase_match": true,
+        "occurrences": 21
+      },
+      {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+        "filename": "arxiv_2506.22716_original.pdf",
+        "page": 10,
+        "page_label": "10",
+        "page_count": 25,
+        "page_numbering": "pdf_1_based",
+        "extraction": "pdf_text",
+        "snippet": "responses per example. We further perform out-of-distribution (OOD) evaluation of BEST-Route\nusing MT-Bench Zheng et al. [2023].\nRouter and Proxy Reward Model. We use DeBERTa-v3-small [He et al., 2020] (44M)\nas the backbone to train our Multi-Head Router, while the proxy reward model is fine-tuned from\nOpenAssistant RM 2, a DeBERTa-v3-large model (300M). We train both Multi-Head Router and the\nproxy reward model with the corresponding loss from Section 4 for 5 epochs and use the validation\nset to choose the best checkpoints for final evaluation. All inference experiments are ",
+        "snippet_start": 0,
+        "matched_terms": [
+          "best",
+          "route"
+        ],
+        "phrase_match": true,
+        "occurrences": 14
+      },
+      {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+        "filename": "arxiv_2506.22716_original.pdf",
+        "page": 2,
+        "page_label": "2",
+        "page_count": 25,
+        "page_numbering": "pdf_1_based",
+        "extraction": "pdf_text",
+        "snippet": "Query q\n $ $$ $$$\n1. Match Probability Prediction\nN=1\nLLMs\nSelect the optimal \nLLM and Best-of-N \ncombination\nQuery q\nResponse 1 Response N\n2. Best-of-N Sampling\nN=2\nN=N\n... ... ... ... Query q\n3. Score each response \nusing proxy reward model and return the best.\n...\nN Responses\nSelected\nLLM\nProxy RMBest Response\nBEST-RouteMulti-Head Router\nBest Response\nFigure 1: System overview of BEST-Route: Best-of-n Enhanced Sampling and Test-time Route\nOptimization.\ndevelopers and users [Yu et al., 2022]. The growing demand for LLM-backed services has spurred\nthe development of innovative so",
+        "snippet_start": 0,
+        "matched_terms": [
+          "best",
+          "route"
+        ],
+        "phrase_match": true,
+        "occurrences": 13
+      },
+      {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+        "filename": "arxiv_2506.22716_original.pdf",
+        "page": 16,
+        "page_label": "16",
+        "page_count": 25,
+        "page_numbering": "pdf_1_based",
+        "extraction": "pdf_text",
+        "snippet": "6 Limitations\nWhile BEST-Route effectively reduces inference costs while maintaining high response quality,\nour approach has some limitations that warrant further investigation:\nDependency on Proxy Reward Model Accuracy . Our best-of-n sampling strategy relies\non the proxy reward model to rank generated responses effectively. Although our experiments\ndemonstrate strong alignment between the proxy model and ground-truth evaluations, potential\nmisalignment in certain cases may result in suboptimal response selection.",
+        "snippet_start": 0,
+        "matched_terms": [
+          "best",
+          "route"
+        ],
+        "phrase_match": true,
+        "occurrences": 13
+      },
+      {
+        "path": "/Users/thundercock2/Documents/Github/multi-step-structured-reasoning/work/rat_reading_live_20261024/arxiv_2506.22716_original.pdf",
+        "filename": "arxiv_2506.22716_original.pdf",
+        "page": 11,
+        "page_label": "11",
+        "page_count": 25,
+        "page_numbering": "pdf_1_based",
+        "extraction": "pdf_text",
+        "snippet": "ueries)\n0.112\n0.114\n0.116\n0.118\n0.120\n0.122\n0.124\n0.126armoRM scores ( )\nN-label\nN-class\nClustering\nBEST-Route\ngpt-35-turbo\nllama-31-8b\nmistral-7b\nmistral-8x7b\nphi-3-medium\nphi-3-mini\ngpt-4o\nFigure 3: Routing performance results.\nWe also examine the impact of best-of- n sampling (Figure 4) by comparing GPT-4o and\nPhi-3-mini at n = 1, 3. The results show that best-of- n sampling significantly enhances routing\nperformance, achieving better cost-accuracy trade-offs. We further compare BEST-Route with\nbest-of-n sampling for each LLM (Figure 5). Best-of- n offers fixed trade-offs for each model and",
+        "snippet_start": 24,
+        "matched_terms": [
+          "best",
+          "route"
+        ],
+        "phrase_match": true,
+        "occurrences": 12
+      }
+    ],
+    "nextPage": 0,
+    "pageText": "",
+    "pageReadingText": "",
+    "pageNumber": 0,
+    "pageLabel": "",
+    "pageTruncated": false,
+    "canCopy": false,
+    "canBack": false,
+    "errorCode": "",
+    "errorText": "Không xử lý được yêu cầu này.",
+    "events": [
+      "Đã nhận yêu cầu.",
+      "Đang tìm từ khóa trong trang PDF 1–25…",
+      "Đã tìm trang PDF 1–25 / 25. 16 trang khớp; đang hiện 5. 0 trang không có văn bản trích xuất. Tìm theo từ khóa; OCR chưa chạy."
+    ],
+    "contradictionReport": null,
+    "finderHits": [],
+    "finderQuery": "",
+    "installedApps": [],
+    "isAppsView": false,
+    "savedDraft": "",
+    "isQuestionQuery": false
+  },
+  "model_calls_exist": false
+}

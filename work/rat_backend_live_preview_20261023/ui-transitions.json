@@ -1,0 +1,142 @@
+[
+  {
+    "observed_unix": 1792770627.0654788,
+    "draft": "Trong mảng [2, 4, 7, 9, 13], số 9 có index tính từ 0 là bao nhiêu? Trả lời một câu ngắn.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770627.1405818,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770660.552201,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-1",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792770700.5173628,
+    "draft": "Viết hàm Python binary_search(a, target) trả index từ 0 hoặc -1. Chỉ gửi mã Python, giữ thụt dòng, không dùng Markdown, không cần ví dụ hay ghi chú.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770700.5492501,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770734.023936,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792770773.411048,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-2",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792770804.823068,
+    "draft": "Change that function to return the FIRST index when target repeats. Return only raw Python source, without Markdown fences or examples.",
+    "view": "busy",
+    "busy": true,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770804.886354,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": true,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770811.468596,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-3",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770838.352146,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-3",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  },
+  {
+    "observed_unix": 1792770885.917257,
+    "draft": "Bạn chưa sửa hàm: với a = [2, 2, 2] và target = 2, hàm vừa rồi trả 1; tôi cần 0, là index đầu tiên. Hãy sửa thật sự để tiếp tục tìm bên trái sau khi thấy target. Chỉ mã nguồn, bắt đầu ngay bằng def, không bọc dấu backtick.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770885.947718,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-4",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792770922.8605282,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": true,
+    "turnId": "turn-4",
+    "status": "Đã trả lời · có thể hỏi tiếp"
+  }
+]

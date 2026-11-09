@@ -1,0 +1,14 @@
+{
+  "purpose": "Coherence proposal review and public-API ABA reproduction",
+  "attachment": "/Users/thundercock2/.codex/attachments/90605085-1354-4c9f-910a-a6e7bd5d52a6/Văn bản đã dán.txt",
+  "attachment_sha256": "191ea6c7b87ec6144312e6034a62dfaef32fabbc33c420c7ba9cb204683b4e85",
+  "outputs": {
+    "reply_to_gemini.md": "c383935a2a91a21013eb51fa313bdba9823500fcb6c8ebd7c1ee9be4cb87ad18",
+    "verify_aba.py": "d45adad546be441388891dae28d1136e768d2a2d30646ede8d4b86bb7a7b7114",
+    "aba_results.json": "3382082db153a19b0bf3acd663ed3bbf95c804e44c97a8ecb2a46ee7668fa5f6",
+    "decisions.md": "41484e27a9c09cddef2177225d77819a433f30e9fe142580d0d8ee0b15b61a7a"
+  },
+  "inference_calls": 0,
+  "operation_dispatches": 0,
+  "product_files_modified": []
+}

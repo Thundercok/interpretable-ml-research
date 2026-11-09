@@ -1,0 +1,32 @@
+[
+  {
+    "observed_unix": 1792771516.879749,
+    "draft": "Giải thích chi tiết tìm kiếm nhị phân và độ phức tạp thời gian, cho ba ví dụ.",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Chuột đang xử lý yêu cầu…"
+  },
+  {
+    "observed_unix": 1792771516.953176,
+    "draft": "",
+    "view": "busy",
+    "busy": true,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đang đọc yêu cầu…"
+  },
+  {
+    "observed_unix": 1792771522.732954,
+    "draft": "",
+    "view": "answer",
+    "busy": false,
+    "expanded": false,
+    "unread": false,
+    "turnId": "turn-1",
+    "status": "Đã dừng yêu cầu. Nội dung đang nhập vẫn được giữ."
+  }
+]
