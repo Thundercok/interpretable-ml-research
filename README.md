@@ -1,7 +1,7 @@
-# RAT — Local-first Desktop Assistant
+# Selective Delegation Agent
 
 <p align="center">
-  <strong>A local-first macOS assistant for document search, contextual reasoning, and everyday workflows.</strong>
+  <strong>Local-first macOS assistant and document intelligence desk with selective delegation, contextual reasoning, and on-device privacy (powered by the RAT execution engine).</strong>
 </p>
 
 <p align="center">
@@ -15,11 +15,28 @@
 
 ## 1. Overview
 
-**RAT** is an on-device personal assistant and document intelligence desk designed for macOS. Instead of routing all interactions and documents to third-party cloud endpoints, RAT executes search indexing, document parsing, and reasoning locally on Apple Silicon.
+**Selective Delegation Agent** is an on-device personal assistant and document intelligence desk designed for macOS. Instead of indiscriminately routing all interactions and documents to third-party cloud endpoints, the agent executes search indexing, document parsing, and reasoning locally on Apple Silicon, only delegating tasks when bounded verifiers and operational constraints require it.
 
-RAT operates in two complementary modes:
-- **Resident Desktop Shell**: A background tray and hotkey-driven interface built on PyQt6 / Qt Quick for instant searching, PDF inspection, and application control.
+The platform operates across two complementary environments:
+- **Resident Desktop Shell (RAT)**: A background tray and hotkey-driven interface built on PyQt6 / Qt Quick for instant searching, PDF inspection, and application control.
 - **Headless CLI & Kernel**: A modular command-line suite and reasoning kernel for automated indexing, offline Q&A, and diff reviews.
+
+---
+
+## Visual Preview
+
+<p align="center">
+  <img src="docs/images/omnibar_search.png" alt="RAT Omnibar Search" width="85%" />
+  <br>
+  <em>Instant Apple Spotlight-style hybrid search with semantic reranking and latency counters</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/document_desk.png" alt="RAT Document Desk" width="48%" />
+  <img src="docs/images/chat_assistant.png" alt="RAT Assistant Stream" width="48%" />
+  <br>
+  <em>Left: Document inspection desk with page citations · Right: Local on-device assistant dialogue stream</em>
+</p>
 
 ---
 
@@ -88,35 +105,43 @@ RAT Runtime Architecture
 git clone https://github.com/Thundercok/selective-delegation-agent.git
 cd selective-delegation-agent
 
-# Install dependencies using uv
+# Option A: Fast install with uv (recommended)
 uv sync
+
+# Option B: Standard pip workflow
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ---
 
 ## 6. Usage
 
+If using `uv`, you can prefix commands with `uv run` (or activate `.venv` with `source .venv/bin/activate`).
+
 ### Launch Desktop Application (GUI)
 
 ```bash
 # Launch default Unified Qt Quick Desk
-python3 main.py
+uv run python main.py
+# (or: python3 main.py with .venv active)
 
 # Launch Quick PDF inspection mode
-python3 main.py quick-pdf
+uv run python main.py quick-pdf
 
 # Launch Widgets Omnibar overlay
-python3 main.py widgets
+uv run python main.py widgets
 ```
 
 ### CLI Commands
 
 ```bash
 # Index configured directories
-python3 main.py index
+uv run python main.py index
 
 # Natural language hybrid search
-python3 main.py search "báo cáo tài chính quý 3"
+uv run python main.py search "báo cáo tài chính quý 3"
 
 # Query local SLM about an indexed document
 python3 main.py ask "contract_2026.pdf" "What are the payment terms?"

@@ -248,6 +248,7 @@ class QuickPDFController(QObject):
         self._preview_file = preview_file
         self._launch_feedback = ""
         self._launch_feedback_error = False
+        self._artifact_card: Optional[Dict[str, Any]] = None
         self._snapshot_renderer = PdfSnapshotRenderer()
         self._delivered.connect(self._finish, Qt.ConnectionType.QueuedConnection)
         self._execution_delivered.connect(self._handle_execution_delivered, Qt.ConnectionType.QueuedConnection)
@@ -525,6 +526,7 @@ class QuickPDFController(QObject):
             "launchFeedback": self._launch_feedback,
             "launchFeedbackError": self._launch_feedback_error,
             "isQuestionQuery": self._is_conversational_query(self._finder_query),
+            "artifactCard": self._artifact_card,
         }
 
     @staticmethod
@@ -1056,6 +1058,126 @@ class QuickPDFController(QObject):
                 pass
         return committed
 
+    def _dispatch_instant_tool(self, q: str, origin: str = "chat") -> bool:
+        """Handle standalone instant tools: Kinh Dịch, Lenormand, Web crawl, and Timetable."""
+        q_low = q.lower()
+        res_card: Optional[Dict[str, Any]] = None
+        ans_text: str = ""
+
+        # 1. Kinh Dịch
+        iching_keywords = (
+            "kinh dịch", "kinh dich", "gieo quẻ", "gieo que",
+            "bói quẻ", "boi que", "bói dịch", "boi dich",
+            "quẻ dịch", "que dich", "lên quẻ", "len que"
+        )
+        if any(k in q_low for k in iching_keywords):
+            from rat.engine.divination import cast_iching
+            res_card = cast_iching(q)
+            ch_str = f" (Hào {', '.join(str(l) for l in res_card['changing_lines'])} động)" if res_card['changing_lines'] else ""
+            ans_text = (
+                f"🔮 Quẻ Kinh Dịch: {res_card['hexagram_name']}{ch_str}\n"
+                f"• Thượng: {res_card['upper_trigram']} · Hạ: {res_card['lower_trigram']}\n"
+                f"• Ý nghĩa: {res_card['meaning']}\n"
+                f"• Lời khuyên của Chuột: {res_card['advice']}"
+            )
+            if res_card.get("transformed"):
+                t = res_card["transformed"]
+                ans_text += f"\n\n🔄 Quẻ Biến: {t['name']} ({t['upper']} trên {t['lower']})\n• {t['meaning']}"
+
+        # 2. Lenormand
+        elif any(k in q_low for k in (
+            "lenormand", "rút bài", "rut bai", "bói bài", "boi bai",
+            "bói lenormand", "boi lenormand", "rút 3 lá", "rut 3 la"
+        )):
+            from rat.engine.divination import draw_lenormand
+            res_card = draw_lenormand(q, count=3)
+            cards_lines = []
+            for i, c in enumerate(res_card["cards"]):
+                cards_lines.append(f"{i+1}. {c['slot']}: [{c['number']}] {c['icon']} {c['name']} — {c['meaning']}")
+            ans_text = (
+                f"🃏 Rút 3 lá bài Lenormand:\n\n"
+                + "\n".join(cards_lines) + "\n\n"
+                f"✨ Thông điệp: {res_card['summary']}"
+            )
+
+        # 3. Web Crawl / Reader
+        elif re.search(r"https?://", q, re.I):
+            from rat.engine.web_reader import fetch_web_summary, extract_url
+            url = extract_url(q) or q
+            res_card = fetch_web_summary(url)
+            bullets_text = "\n".join(f"• {b}" for b in res_card["bullets"]) if res_card["bullets"] else res_card["summary"]
+            ans_text = (
+                f"🌐 Tóm tắt trang: {res_card['title']} ({res_card['domain']})\n\n"
+                f"{bullets_text}\n\n"
+                f"🔗 Nguồn: {res_card['url']}"
+            )
+
+        # 4. Thời khóa biểu
+        elif any(k in q_low for k in (
+            "thời khóa biểu", "thoi khoa bieu", "lịch học", "lich hoc",
+            "tkb", "xem lịch", "xem lich", "hôm nay học gì", "hom nay hoc gi", "mai học gì", "mai hoc gi"
+        )):
+            from rat.engine.runtime_tools import get_schedule
+            compositor = getattr(self.assistant_runtime, "compositor", None)
+            if compositor is None:
+                from rat.kernel.profile import _main_compositor
+                compositor = _main_compositor()
+
+            target_day = "today"
+            if "mai" in q_low or "tomorrow" in q_low:
+                target_day = "tomorrow"
+            elif any(w in q_low for w in ("thứ 2", "thu 2", "t2", "thứ hai", "thu hai")):
+                target_day = "T2"
+            elif any(w in q_low for w in ("thứ 3", "thu 3", "t3", "thứ ba", "thu ba")):
+                target_day = "T3"
+            elif any(w in q_low for w in ("thứ 4", "thu 4", "t4", "thứ tư", "thu tu")):
+                target_day = "T4"
+            elif any(w in q_low for w in ("thứ 5", "thu 5", "t5", "thứ năm", "thu nam")):
+                target_day = "T5"
+            elif any(w in q_low for w in ("thứ 6", "thu 6", "t6", "thứ sáu", "thu sau")):
+                target_day = "T6"
+            elif any(w in q_low for w in ("thứ 7", "thu 7", "t7", "thứ bảy", "thu bay")):
+                target_day = "T7"
+            elif any(w in q_low for w in ("chủ nhật", "chu nhat", "cn")):
+                target_day = "CN"
+
+            sessions = get_schedule(compositor, target_date=target_day)
+            day_display = "Hôm nay" if target_day == "today" else "Ngày mai" if target_day == "tomorrow" else target_day
+            if sessions:
+                day_display = sessions[0].get("day", day_display)
+                lines = []
+                for s in sessions:
+                    instr = f" ({s['instructor']})" if s.get('instructor') else ""
+                    lines.append(f"• [{s['time']}] {s['course_name']} — Phòng {s['room']}{instr}")
+                ans_text = f"📅 Thời khóa biểu: {day_display}\n\n" + "\n".join(lines)
+            else:
+                ans_text = f"📅 Thời khóa biểu: {day_display}\n\n🎉 Bạn không có tiết học nào trong ngày này. Thảnh thơi nghỉ ngơi nhé!"
+
+            res_card = {
+                "visual_type": "timetable",
+                "day": day_display,
+                "target_date": target_day,
+                "sessions": sessions,
+            }
+
+        if res_card is not None:
+            turn_snap = self.conversation.begin_turn(q, kind="chat")
+            self.conversation.complete_turn(turn_snap.turn_ref.turn_id, ans_text, execution_id=turn_snap.execution_id)
+            self._current_turn_id = turn_snap.turn_ref.turn_id
+            self._displayed_turn_id = turn_snap.turn_ref.turn_id
+            self._current_execution_id = turn_snap.execution_id
+            self._last_user_query = q
+            self._last_assistant_answer = ans_text
+            self._artifact_card = res_card
+            self._view = "answer"
+            self._unread = not self._expanded
+            self._status = "Đã trả lời · có thể hỏi tiếp"
+            self._events.append(f"Chuột đã xong {res_card.get('visual_type')}: {q}")
+            self.changed.emit()
+            return True
+
+        return False
+
     def submit(
         self,
         query: str,
@@ -1083,6 +1205,11 @@ class QuickPDFController(QObject):
         self._finder_hits = []
         if self._finder_coordinator is not None:
             self._finder_coordinator.cancel()
+
+        if self._selection is None and self._dispatch_instant_tool(q, origin=origin):
+            return True
+
+        self._artifact_card = None
 
         history_messages = self.conversation.messages_with_turn_ids()
         turn_references = self.conversation.turn_references()

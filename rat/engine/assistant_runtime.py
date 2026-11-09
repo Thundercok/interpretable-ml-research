@@ -320,7 +320,7 @@ class AssistantRuntime:
                     # extra discovery round trip or user-text routing.
                     selected.update({'read_document', 'search_book_pages',
                                      'read_book_page', 'deliver_document', 'synthesize_smart_note',
-                                     'find_file_or_app', 'reveal_in_finder'})
+                                     'find_file_or_app', 'reveal_in_finder', 'open_document'})
                     if self.artifact_store.find_by_kind('structured_note'):
                         selected.update({'update_note_action_item', 'expand_note_section'})
                 if snapshot and snapshot['observed_state']['lifecycle'].get('pending_input'):
@@ -468,7 +468,7 @@ class AssistantRuntime:
         model_time = tool_time = 0.0
         context = dict(history=history, previous_sources=previous_sources, member_id=member_id,
                        now_dt=now_dt, task_state=task_memory, turn_references=turn_references,
-                       should_cancel=should_cancel)
+                       should_cancel=should_cancel, turn_ref=turn_ref)
         if decision_callable is not None:
             context['decision_callable'] = decision_callable
         # Resolve the latest bound/frozen declaration on every model boundary.

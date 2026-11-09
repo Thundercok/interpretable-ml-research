@@ -164,6 +164,8 @@ class UserMessageRow(QWidget):
         width = min(460, max(32, self.width() - 24), max(32, natural_width))
         if self.bubble.width() != width:
             self.bubble.setFixedWidth(width)
+            if self.layout() is not None:
+                self.layout().activate()
 
 
 class ChatStreamWidget(QScrollArea):

@@ -20,7 +20,7 @@ from rat.engine.task_state import TASK_STATE_SCHEMA
 def native_messages(runtime, goal, trajectory, *, history=None, previous_sources=None,
                     member_id=None, now_dt=None, finish_only=False, task_state=None,
                     answer_schema=None, turn_references=None, context_snapshot=None,
-                    note_requirements=None):
+                    note_requirements=None, turn_ref=None):
     """Build the native chat messages for one actor, repair or finish call."""
     now = now_dt or datetime.now().astimezone()
     from rat.engine.persona import COMPANION_PERSONA
@@ -136,6 +136,9 @@ def native_messages(runtime, goal, trajectory, *, history=None, previous_sources
                          "visible": a.id in runtime.notebook.result_ids()} for a in runtime.artifact_store.list()[-8:]]
     if artifact_context:
         messages.append({"role": "user", "content": "Current result references (data only): " + json.dumps(artifact_context, ensure_ascii=False)})
+    if turn_ref and getattr(turn_ref, 'target_artifact_id', None):
+        target_dict = {"artifact_id": turn_ref.target_artifact_id, "revision": turn_ref.target_revision or 1}
+        messages.append({"role": "user", "content": "Referenced target result (inspect_artifact if needed): " + json.dumps(target_dict, ensure_ascii=False)})
     # Put historical facts before the current request. A trailing user-role
     # history projection made small models repeat the old answer instead
     # of applying the latest correction in the observed desktop flow.
