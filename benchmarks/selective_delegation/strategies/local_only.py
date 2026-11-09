@@ -13,11 +13,11 @@ SYSTEM_PROMPT = (
 def extract_numeric_answer(text: str) -> str | None:
     if not text:
         return None
-    matches = re.findall(r"####\\s*([-+]?(?:\\d[\\d,]*\\.?\\d*|\\.\\d+))", text)
+    matches = re.findall(r"####\s*([-+]?(?:\d[\d,]*\.?\d*|\.\d+))", text)
     if matches:
         return matches[-1].replace(",", "")
     # Fallback is intentionally conservative: use the last standalone numeric token.
-    matches = re.findall(r"(?<![\\w.])[-+]?(?:\\d[\\d,]*\\.?\\d*|\\.\\d+)(?![\\w.])", text)
+    matches = re.findall(r"(?<![\w.])[-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?![\w.])", text)
     return matches[-1].replace(",", "") if matches else None
 
 
