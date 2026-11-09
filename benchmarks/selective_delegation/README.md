@@ -16,7 +16,7 @@ The 20 examples are a pipeline smoke test only. Do not use this subset to tune p
 ## Setup (from repository root)
 
 ```bash
-python -m pip install PyYAML
+python -m pip install -r benchmarks/selective_delegation/requirements.txt
 # Ensure Ollama is running and the configured model is installed.
 ollama list
 python -m benchmarks.selective_delegation.runner
