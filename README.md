@@ -1,8 +1,4 @@
-# 🐭 CHUOT: Selective-Delegation-Agent
 
-<p align="center">
-  <img src="rat/assets/rat_mascot.png" alt="CHUOT Mascot" width="160" />
-</p>
 
 <p align="center">
   <strong>An On-Device Resident Agent that Solves Everyday Tasks for $0 and Dynamically Escalates to Claude When Stuck.</strong>
@@ -102,8 +98,3 @@ This project bridges empirical agent routing with formal verification research:
 - **Mechanistic Faithfulness**: Validated on load-bearing reasoning traces from [`multi-step-structured-reasoning`](https://github.com/Thundercok/multi-step-structured-reasoning).
 - **Cost-Constrained Execution**: Inspired by FrugalGPT (Chen et al., 2023) and AutoMix (Khattab et al., 2024), extending the frontier from single-turn QA to multi-step desktop agent workflows.
 
----
-
-## 📄 License
-
-MIT License. Crafted with ❤️ for independent open research.
