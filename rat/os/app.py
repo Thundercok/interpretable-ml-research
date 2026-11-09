@@ -136,13 +136,16 @@ class ResidentApplication(QObject):
                 active.append("TrayRescanWorker")
         if self.desk_controller:
             ctrl = self.desk_controller
-            if hasattr(ctrl, "_execution_workers"):
-                for w in ctrl._execution_workers:
-                    if w.isRunning():
+            exec_workers = getattr(ctrl, "_execution_workers", None)
+            if isinstance(exec_workers, (list, tuple, set)):
+                for w in exec_workers:
+                    if hasattr(w, "isRunning") and w.isRunning() is True:
                         name = getattr(w, "objectName", lambda: "")() or w.__class__.__name__
                         active.append(f"DeskWorker({name})")
-            if hasattr(ctrl, "_worker") and ctrl._worker:
-                if hasattr(ctrl._worker, "_thread") and ctrl._worker._thread.is_alive():
+            pdf_worker = getattr(ctrl, "_worker", None)
+            if pdf_worker and hasattr(pdf_worker, "_thread"):
+                th = getattr(pdf_worker, "_thread", None)
+                if th and hasattr(th, "is_alive") and th.is_alive() is True:
                     active.append("PDFWorker")
         return active
 
@@ -288,6 +291,16 @@ class ResidentApplication(QObject):
 
         if self._shutdown_timer and self._shutdown_timer.isActive():
             self._shutdown_timer.stop()
+
+        # Join background QThreads cleanly to prevent QThread destroyed while running errors
+        for thread_attr in ("warmup_thread", "_index_thread"):
+            th = getattr(self, thread_attr, None)
+            if th and th.isRunning():
+                try:
+                    th.quit()
+                    th.wait(500)
+                except Exception as e:
+                    logger.debug(f"Error waiting on {thread_attr}: {e}")
 
         if self.desk_view:
             try:
