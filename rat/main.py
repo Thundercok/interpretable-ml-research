@@ -8,6 +8,8 @@ import logging
 import os
 import sys
 
+from rat.app.router import cli_main, route_request, run_resident_app
+
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 
 logging.basicConfig(
@@ -17,159 +19,8 @@ logging.basicConfig(
 logger = logging.getLogger("rat.main")
 
 
-def cli_main() -> None:
-    from rat.cli import main as run_cli
-    run_cli()
-
-
-def run_resident_app(mode: str = "finder", *, reasoning_engine=None, allow_synthetic_policy=False) -> None:
-    # Qt and resident services are needed only for a GUI launch. Install the
-    # GUI exception hooks before importing or constructing Qt components.
-    from rat.os.crash_shield import install_crash_shield
-    install_crash_shield()
-    from rat.os.app import run_resident_app as launch
-    if reasoning_engine is None:
-        launch(mode=mode)
-    else:
-        launch(mode=mode, reasoning_engine=reasoning_engine,
-               allow_synthetic_policy=allow_synthetic_policy)
-
-
 def main() -> None:
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1]
-        if cmd == "--diagnostics":
-            from rat.os.diagnostics import run_session
-            raise SystemExit(run_session(sys.argv[2:]))
-        elif cmd == "quick-pdf":
-            from rat.ui.quick_app import main as quick_pdf_main
-            raise SystemExit(quick_pdf_main(sys.argv[2:]))
-        elif cmd.lower().endswith(".pdf"):
-            from rat.ui.quick_app import main as quick_pdf_main
-            raise SystemExit(quick_pdf_main(sys.argv[1:]))
-        elif cmd in ("lab", "reasoning-lab"):
-            from rat.ui.reasoning_lab import main as lab_main
-            raise SystemExit(lab_main())
-        elif cmd in ("astrology", "natal", "la-so"):
-            from rat.os.crash_shield import install_crash_shield
-            install_crash_shield()
-            from rat.astrology.__main__ import main as natal_main
-            natal_main()
-            return
-        elif cmd in ("search", "index", "status", "ask", "ask-file", "dedup", "review", "doctor", "--help", "-h"):
-            cli_main()
-            return
-        elif cmd in ("init-shell", "shell"):
-            from rat.os.shell_integration import generate_shell_init_script
-            print(generate_shell_init_script())
-            return
-        elif cmd == "install-shell":
-            from rat.os.shell_integration import install_to_user_zshrc
-            ok = install_to_user_zshrc()
-            print("✓ Đã cài đặt tích hợp lệnh 'rat' vào ~/.zshrc!" if ok else "⚠️ Không thể ghi vào ~/.zshrc")
-            return
-        elif cmd in ("install-daemon", "install-service"):
-            from rat.os.daemon import install_launch_agent
-            ok = install_launch_agent()
-            print("✓ Đã cài đặt LaunchAgent tự động khởi động cùng macOS!" if ok else "⚠️ Cài đặt LaunchAgent thất bại")
-            return
-        elif cmd in ("uninstall-daemon", "uninstall-service"):
-            from rat.os.daemon import uninstall_launch_agent
-            ok = uninstall_launch_agent()
-            print("✓ Đã gỡ bỏ LaunchAgent khỏi macOS!" if ok else "⚠️ Gỡ bỏ LaunchAgent thất bại")
-            return
-        elif cmd in ("--daemon", "-d"):
-            run_resident_app(mode="daemon")
-            return
-        elif cmd in ("spotlight", "widgets", "omnibar"):
-            run_resident_app(mode="spotlight")
-            return
-        elif cmd.startswith("--mode="):
-            target_mode = cmd.split("=", 1)[1]
-            if target_mode in ("quick", "quick-pdf"):
-                from rat.ui.quick_app import main as quick_main
-                raise SystemExit(quick_main(sys.argv[2:]))
-            else:
-                run_resident_app(mode=target_mode)
-                return
-        elif cmd == "--mode" and len(sys.argv) > 2:
-            target_mode = sys.argv[2]
-            if target_mode in ("quick", "quick-pdf"):
-                from rat.ui.quick_app import main as quick_main
-                raise SystemExit(quick_main(sys.argv[3:]))
-            else:
-                run_resident_app(mode=target_mode)
-                return
-        elif cmd in ("widget", "mini", "claude"):
-            run_resident_app(mode="widget")
-            return
-        elif cmd in ("schedule", "tkb", "lich"):
-            if len(sys.argv) > 2 and sys.argv[2] in ("--widget", "-w", "widget"):
-                run_resident_app(mode="widget")
-            else:
-                run_resident_app(mode="schedule")
-            return
-        elif cmd == "finder":
-            run_resident_app(mode="finder")
-            return
-        elif not cmd.startswith("-"):
-            # 1-Action Direct CLI Resolver for Math, Campus Room, or Schedule queries
-            import re
-            query = " ".join(sys.argv[1:]).strip()
-
-            # 1. Quick Math via AST safe_calculate
-            calc_cand = re.sub(r"^(?:tính|tinh|calc|calculate|\=)\s*", "", query, flags=re.I).strip()
-            if re.search(r"\d", calc_cand) and any(op in calc_cand for op in ["+", "*", "/", "%", "^", " - "]):
-                try:
-                    from reasoning.reasoning_strategies import safe_calculate
-                    res = safe_calculate(calc_cand)
-                    if res and "Lỗi" not in res and res != "None":
-                        print(f"🧮 Kết quả tính toán: {res}")
-                        return
-                except Exception:
-                    pass
-
-            # 2. Campus Room Guide
-            m_room = re.search(r"\b([A-Fa-fCcFf]\d{3}|TRET-NTD-2)\b", query)
-            if m_room:
-                try:
-                    from rat.timetable.model import resolve_room_location
-                    rm = m_room.group(1).upper()
-                    print(f"📍 Phòng {rm}: {resolve_room_location(rm)}")
-                    return
-                except Exception:
-                    pass
-
-            # 3. Live Agenda Query
-            if any(k in query.lower() for k in ["hôm nay", "hom nay", "chiều nay", "chieu nay", "sáng nay", "sang nay", "lịch học", "lich hoc"]):
-                try:
-                    from rat.config import config
-                    from rat.timetable.compositor import TimetableCompositor
-                    from rat.timetable.data import load_club_members
-                    comp = TimetableCompositor()
-                    members = load_club_members()
-                    profile_name = (config.default_member_name or "").strip().lower()
-                    active_member = next((m for m in members if profile_name in m.name.lower()), members[0])
-                    agenda = comp.get_today_agenda(active_member)
-                    if agenda:
-                        print(f"⚡ Hôm nay ({active_member.name}) có {len(agenda)} ca học:")
-                        for item in agenda:
-                            s = item["session"]
-                            deg = "[ThS]" if s.degree_level == "master" else "[ĐH]"
-                            print(f"  • {item['badge']} [{item['start_time']} - {item['end_time']}] {deg} {s.course_name} (Phòng {s.room}) — {item['countdown']}")
-                    else:
-                        print(f"⚡ Hôm nay ({active_member.name}) không có ca học nào trên TKB. Hoàn toàn rảnh!")
-                    return
-                except Exception as e:
-                    logger.debug(f"CLI agenda error: {e}")
-
-            # Fallback to semantic file search in CLI
-            cli_main()
-            return
-
-    # Primary unified entry point: summon unified RAT Qt Quick Desk
-    from rat.ui.quick_app import main as quick_main
-    raise SystemExit(quick_main(sys.argv[1:]))
+    route_request(sys.argv[1:])
 
 
 if __name__ == "__main__":
