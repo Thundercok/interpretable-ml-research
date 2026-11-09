@@ -5,6 +5,9 @@ from benchmarks.selective_delegation.strategies.verified_repair import VerifiedR
 from benchmarks.selective_delegation.strategies.always_cloud import AlwaysCloudStrategy
 from benchmarks.selective_delegation.strategies.static_escalation import StaticEscalationStrategy
 from benchmarks.selective_delegation.strategies.selective import SelectiveStrategy, SelectiveDelegationPolicy
+from benchmarks.selective_delegation.strategies.frugalgpt import FrugalGPTStrategy
+from benchmarks.selective_delegation.strategies.automix import AutoMixStrategy
+from benchmarks.selective_delegation.strategies.peer_review import LocalPeerReviewStrategy
 
 __all__ = [
     "LocalOnlyStrategy",
@@ -14,4 +17,7 @@ __all__ = [
     "StaticEscalationStrategy",
     "SelectiveStrategy",
     "SelectiveDelegationPolicy",
+    "FrugalGPTStrategy",
+    "AutoMixStrategy",
+    "LocalPeerReviewStrategy",
 ]

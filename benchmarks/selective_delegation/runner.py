@@ -20,6 +20,9 @@ from benchmarks.selective_delegation.strategies.verified_repair import VerifiedR
 from benchmarks.selective_delegation.strategies.always_cloud import AlwaysCloudStrategy
 from benchmarks.selective_delegation.strategies.static_escalation import StaticEscalationStrategy
 from benchmarks.selective_delegation.strategies.selective import SelectiveStrategy
+from benchmarks.selective_delegation.strategies.frugalgpt import FrugalGPTStrategy
+from benchmarks.selective_delegation.strategies.automix import AutoMixStrategy
+from benchmarks.selective_delegation.strategies.peer_review import LocalPeerReviewStrategy
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = ROOT / "benchmarks/selective_delegation/config/v1.yaml"
@@ -73,16 +76,29 @@ def build_strategy(
         if cloud_client is None:
             raise RuntimeError("Cloud client is required for B5 (selective). Provide API key.")
         return SelectiveStrategy(local_client, cloud_client, local_max_tokens=l_max, cloud_max_tokens=c_max, timeout=l_timeout, max_repairs=2)
+    if strat in ("frugalgpt", "p1", "frugal"):
+        if cloud_client is None:
+            raise RuntimeError("Cloud client is required for FrugalGPT. Provide API key.")
+        return FrugalGPTStrategy(local_client, cloud_client, local_max_tokens=l_max, cloud_max_tokens=c_max, timeout=l_timeout)
+    if strat in ("automix", "p2"):
+        if cloud_client is None:
+            raise RuntimeError("Cloud client is required for AutoMix. Provide API key.")
+        return AutoMixStrategy(local_client, cloud_client, local_max_tokens=l_max, cloud_max_tokens=c_max, timeout=l_timeout)
+    if strat in ("peer_review", "peer", "b6"):
+        if cloud_client is None:
+            raise RuntimeError("Cloud client is required for Peer Review. Provide API key.")
+        return LocalPeerReviewStrategy(local_client, cloud_client, local_max_tokens=l_max, cloud_max_tokens=c_max, timeout=l_timeout)
 
-    raise ValueError(f"Unknown strategy: {strategy_id}. Available: b0, b1, b2, b3, b4, b5, all")
+    raise ValueError(f"Unknown strategy: {strategy_id}. Available: b0, b1, b2, b3, b4, b5, b6, frugalgpt, automix, peer_review, all")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run CHUOT reasoning benchmark")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    parser.add_argument("--strategy", default="b0", choices=("b0", "b1", "b2", "b3", "b4", "b5", "all",
+    parser.add_argument("--strategy", default="b0", choices=("b0", "b1", "b2", "b3", "b4", "b5", "b6", "all",
                                                             "local_only", "local_retry", "verified_repair",
-                                                            "always_cloud", "static_escalation", "selective"))
+                                                            "always_cloud", "static_escalation", "selective",
+                                                            "frugalgpt", "automix", "peer_review", "peer", "p1", "p2"))
     parser.add_argument("--cloud-provider", choices=("gemini", "anthropic"), default=None,
                         help="Provider override for cloud-enabled strategies.")
     parser.add_argument("--cloud-model", default=None, help="Cloud model override.")
@@ -114,7 +130,7 @@ def main() -> int:
     cloud_model = args.cloud_model or cloud_cfg.get("model")
     cloud_client = None
 
-    needs_cloud = args.strategy in ("b3", "b4", "b5", "all", "always_cloud", "static_escalation", "selective")
+    needs_cloud = args.strategy in ("b3", "b4", "b5", "b6", "all", "always_cloud", "static_escalation", "selective", "frugalgpt", "automix", "peer_review", "peer", "p1", "p2")
     if needs_cloud:
         try:
             cloud_client = get_cloud_client(provider=cloud_provider, model=cloud_model)
