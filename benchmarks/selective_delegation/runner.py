@@ -47,6 +47,17 @@ def numeric_equal(prediction: str | None, target: str) -> bool:
         return False
 
 
+def load_env_file(path: Path) -> None:
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
 def build_strategy(
     strategy_id: str,
     local_client: Any,
@@ -102,6 +113,7 @@ def build_strategy(
 
 
 def main() -> int:
+    load_env_file(ROOT / ".env")
     parser = argparse.ArgumentParser(description="Run CHUOT reasoning benchmark")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--strategy", default="b0", choices=("b0", "b1", "b2", "b3", "b4", "b5", "b6", "all",

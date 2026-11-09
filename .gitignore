@@ -29,3 +29,6 @@ rat/assets/embedding/models--*/
 data/
 results/*.jsonl
 
+
+.env
+.env.local
