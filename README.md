@@ -1,100 +1,167 @@
-
+# RAT — Local-first Desktop Assistant
 
 <p align="center">
-  <strong>An On-Device Resident Agent that Solves Everyday Tasks for $0 and Dynamically Escalates to Claude When Stuck.</strong>
+  <strong>A local-first macOS assistant for document search, contextual reasoning, and everyday workflows.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Thundercok/selective-delegation-agent/stargazers"><img src="https://img.shields.io/github/stars/Thundercok/selective-delegation-agent?style=for-the-badge&color=ffd000" alt="Stars" /></a>
-  <a href="https://github.com/Thundercok/selective-delegation-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" /></a>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11+-brightgreen.svg?style=for-the-badge" alt="Python" /></a>
-  <a href="https://developer.apple.com/metal/"><img src="https://img.shields.io/badge/Apple_Silicon-Metal%20%2F%20MLX-black?style=for-the-badge" alt="Apple Silicon" /></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-blue.svg?style=flat-square" alt="Python 3.11+" /></a>
+  <a href="https://developer.apple.com/metal/"><img src="https://img.shields.io/badge/Platform-macOS%20(Apple%20Silicon)-black?style=flat-square" alt="macOS Apple Silicon" /></a>
+  <a href="https://www.riverbankcomputing.com/software/pyqt/"><img src="https://img.shields.io/badge/UI-PyQt6%20%2F%20Qt%20Quick-41CD52.svg?style=flat-square" alt="PyQt6" /></a>
+  <a href="https://github.com/ml-explore/mlx"><img src="https://img.shields.io/badge/Engine-MLX%20%2F%20Local%20SLM-orange.svg?style=flat-square" alt="MLX Engine" /></a>
 </p>
 
 ---
 
-## ⚡ The Core Problem: Why Pay for Cloud When You Don't Have To?
+## 1. Overview
 
-Existing cascading architectures like **FrugalGPT** (Stanford) and **AutoMix** evaluate static prompt routing on benchmark question-answering datasets. Meanwhile, developer coding agents (like Aider or OpenHands) either send every keystroke to expensive cloud APIs or rigidly split tasks upfront.
+**RAT** is an on-device personal assistant and document intelligence desk designed for macOS. Instead of routing all interactions and documents to third-party cloud endpoints, RAT executes search indexing, document parsing, and reasoning locally on Apple Silicon.
 
-**CHUOT (`selective-delegation-agent`) takes a different approach: Deterministic-Guarded Multi-Step Execution.**
-
-* **Local by Default ($0 / Zero Data Leakage)**: Runs on consumer hardware (Mac Apple Silicon) to inspect files, index documents, parse PDFs, and execute local tools.
-* **Deterministic Guards, Not LLM Judges**: Instead of paying another LLM to score whether the first LLM was right, CHUOT relies on **symbolic, deterministic verifiers** (linters, AST parsers, regex math checks, test suites) to spot failures with 100% precision.
-* **Selective Escalation**: When and only when a deterministic guard fails or local certainty falls below threshold, CHUOT packages the exact bottleneck state and escalates it to frontier models (**Claude / Antigravity**).
+RAT operates in two complementary modes:
+- **Resident Desktop Shell**: A background tray and hotkey-driven interface built on PyQt6 / Qt Quick for instant searching, PDF inspection, and application control.
+- **Headless CLI & Kernel**: A modular command-line suite and reasoning kernel for automated indexing, offline Q&A, and diff reviews.
 
 ---
 
-## 🥊 Competitive Landscape
+## 2. What RAT Actually Does
 
-| Capability | FrugalGPT / AutoMix | Cloud Coding Agents (Aider, etc.) | **CHUOT (`selective-delegation`)** |
-| :--- | :---: | :---: | :---: |
-| **Execution Realm** | Static QA (MMLU / TriviaQA) | Cloud-only Multi-turn | **On-Device OS & Filesystem** |
-| **Verification Method** | LLM scoring LLM *(hallucinates)* | Human in the loop | **Deterministic / Symbolic Guards** |
-| **Cost Profile** | Cloud router + Cloud models | 100% Cloud API bills | **$0 Local Default, Pay Only on Escalation** |
-| **Data Privacy** | All prompts sent to Cloud | Code sent to Cloud | **Local by default; sanitized escalation** |
-| **Hardware** | Datacenter GPUs | Local client, Cloud compute | **Optimized for Apple Silicon (M1/M2/M3)** |
+Unlike purely conversational chatbots or theoretical routing benchmarks, RAT integrates directly with your local workspace:
+
+1. **True Hybrid Search (FTS5 + Dense Vectors)**: Indexes local folders and combines SQLite full-text search with vector embeddings via Reciprocal Rank Fusion (RRF) and HyDE query expansion.
+2. **Deep Document & PDF Intelligence**: Extracts text, page evidence, and structured excerpts from local PDFs, DOCX, and source trees without uploading them to external servers.
+3. **Local SLM Inference**: Executes small language models (such as Qwen 2.5) locally using native MLX on Apple Silicon for zero-cost, offline question answering.
+4. **Desktop Automation & System Integration**: Global hotkey activation, macOS Application bundle resolver, and verified system launch workflows.
+5. **Headless Code Review & Diagnostics**: Multi-lens diff inspection (missing imports, boundary invariants, code hygiene) and deterministic execution verifiers.
 
 ---
 
-## 🏗️ Architecture
+## 3. Architecture
 
-```mermaid
-flowchart TD
-    User["👤 User Task / Question"] --> Local["💻 Local Resident SLM (Apple Silicon)"]
-    Local --> Tool["⚙️ Deterministic Tool Execution (Apple Vision, PDF, AST, Bash)"]
-    Tool --> Guard{"🛡️ Symbolic Verification Guard"}
-    
-    Guard -- "✅ Pass (Verified)" --> Done["🎯 Instant Completion ($0 Cost, 0ms Cloud Latency)"]
-    Guard -- "❌ Detected Failure / Ambiguity" --> Escalator["⚡ Selective Escalation Router"]
-    
-    Escalator --> Cloud["☁️ Frontier Model (Claude 3.5 Sonnet / AGY)"]
-    Cloud -- "Targeted Fix" --> Local
+```
+RAT Runtime Architecture
+│
+├── rat/os/               Desktop Resident & System Layer
+│   ├── app.py            ResidentApplication lifecycle, tray, and event loop
+│   ├── crash_shield.py   Global exception protection and crash recovery
+│   └── diagnostics.py    Isolated state verification and telemetry
+│
+├── rat/ui/               Presentation Layer (PyQt6 & Qt Quick)
+│   ├── quick_app.py      Instant search bar and omnibar overlay
+│   └── views.py          Desk view, PDF inspection, and result displays
+│
+├── rat/engine/           Intelligence & Reasoning Engine
+│   ├── hybrid_search.py  FTS5 + vector embedding search via RRF
+│   ├── slm.py            Local SLM management and inference
+│   ├── mlx_document_session.py  Native Apple Silicon MLX chat runtime
+│   └── verification.py   Deterministic operation checkers and verifiers
+│
+├── rat/crawler/          Filesystem & Storage
+│   ├── indexer.py        Document intake, hashing, and chunking
+│   └── db.py             SQLite database and FTS5 full-text storage
+│
+└── rat/kernel/           Modular Capability & Tool Contracts
+    ├── registry.py       Capability and OperationDefinition registry
+    └── capabilities/     Documents, Applications, Finder, Code Review
 ```
 
 ---
 
-## 🚀 Features
+## 4. Privacy & Data Boundaries
 
-- **🛡️ Zero-Hallucination Symbolic Guards**: Uses code-level deterministic verification (Python AST, format checkers, and execution tests) rather than probabilistic LLM self-evaluation.
-- **⚡ Resident Desktop Integration**: Instant hotkey access, local semantic hybrid search (BM25 + Dense RRF), native Apple Vision OCR, and local translation.
-- **📁 Document Intake Engine**: Blazing fast intake and chunking of complex PDFs, course materials, and local files directly into an indexed SQLite/vector store.
-- **🎛️ Dynamic Escalation Protocol**: Keeps prompt tokens lean by only delegating sub-problems that require deep reasoning to Claude.
+* **Local-First Processing**: Document indexing, vector generation, and search queries execute entirely on your machine. No telemetry or personal documents are transmitted to external servers by default.
+* **Conditional Escalation**: When optional external models or web lookups are explicitly enabled by the user, only the selected task snippet is sent to the configured provider.
+* **Bounded Verifiers**: Operational verifiers run deterministically on local data (AST evaluation, schema validation, evidence matching). They provide reproducible validation for explicitly supported constraints rather than speculative scoring.
 
 ---
 
-## 📦 Quickstart
+## 5. Getting Started
 
-### 1. Prerequisites
-- macOS (Apple Silicon M-series recommended)
-- Python 3.11+
+### Prerequisites
+- **macOS** (Optimized for Apple Silicon: M1 / M2 / M3 / M4)
+- **Python 3.11+**
+- Recommended package manager: [`uv`](https://github.com/astral-sh/uv)
 
-### 2. Installation
+### Installation
+
 ```bash
+# Clone repository
 git clone https://github.com/Thundercok/selective-delegation-agent.git
 cd selective-delegation-agent
 
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 3. Verify Test Suite
-Run the 105 pre-registered architecture and component tests:
-```bash
-pytest tests/
-```
-
-### 4. Run CHUOT Desktop
-```bash
-python main.py
+# Install dependencies using uv
+uv sync
 ```
 
 ---
 
-## 📚 Scientific Grounding
+## 6. Usage
 
-This project bridges empirical agent routing with formal verification research:
-- **Mechanistic Faithfulness**: Validated on load-bearing reasoning traces from [`multi-step-structured-reasoning`](https://github.com/Thundercok/multi-step-structured-reasoning).
-- **Cost-Constrained Execution**: Inspired by FrugalGPT (Chen et al., 2023) and AutoMix (Khattab et al., 2024), extending the frontier from single-turn QA to multi-step desktop agent workflows.
+### Launch Desktop Application (GUI)
 
+```bash
+# Launch default Unified Qt Quick Desk
+python3 main.py
+
+# Launch Quick PDF inspection mode
+python3 main.py quick-pdf
+
+# Launch Widgets Omnibar overlay
+python3 main.py widgets
+```
+
+### CLI Commands
+
+```bash
+# Index configured directories
+python3 main.py index
+
+# Natural language hybrid search
+python3 main.py search "báo cáo tài chính quý 3"
+
+# Query local SLM about an indexed document
+python3 main.py ask "contract_2026.pdf" "What are the payment terms?"
+
+# Offline chat with a specific file using local MLX model
+python3 main.py ask-file /path/to/doc.pdf --model-path /path/to/mlx-model
+
+# Detect duplicate files and document revision trees
+python3 main.py dedup
+
+# Multi-lens automated code review (local diff or GitHub PR)
+python3 main.py review
+python3 main.py review 5 --repo owner/repo
+
+# Check indexing and SLM engine status
+python3 main.py status
+```
+
+---
+
+## 7. Testing & Reliability
+
+The test suite covers unit logic, contract schemas, and isolated diagnostic states:
+
+```bash
+# Run task memory and capability tests
+uv run pytest tests/test_rat_task_memory.py tests/test_code_review_capability.py
+
+# Run verification suite
+uv run pytest tests/test_verifiers.py
+```
+
+---
+
+## 8. Current Scope & Known Limitations
+
+- **Platform Specifics**: Resident background integration and hotkeys currently target macOS. Linux and Windows run primarily in headless / CLI mode.
+- **Model Hardware Bounds**: Local MLX inference speed depends on unified memory bandwidth; 16GB+ RAM is recommended for 7B+ parameter models.
+- **Active Refactoring**: Work is underway to further decouple `rat/main.py` bootstrap routing from the `ResidentApplication` lifecycle.
+
+---
+
+## 9. Roadmap
+
+- [ ] Complete profile configuration to eliminate hardcoded user preferences in CLI.
+- [ ] Decouple resident background watcher lifecycle from UI presentation.
+- [ ] Export standardized diagnostic health reports with JSON schema validation.
+- [ ] Expand standalone cross-platform CLI capabilities.
