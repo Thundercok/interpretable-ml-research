@@ -177,3 +177,47 @@ def test_peer_review_escalates_when_revision_fails():
     assert res["peer_saved_escalation"] is False
     assert local.call_count == 3
     assert cloud.call_count == 1
+
+
+from rat.engine.experience_bank import ExperienceBank, ReplicateAndGradeEngine
+
+
+def test_peer_review_full_compound_learning_loop(tmp_path):
+    db_file = tmp_path / "compound_test.db"
+    bank = ExperienceBank(db_file)
+
+    # Task 1:
+    # 1. Proposer fails: "10 * 2 = 12\n#### 12"
+    # 2. Critic REVISE
+    # 3. Proposer still fails: "10 * 2 = 15\n#### 15"
+    # -> Cloud called ("10 * 2 = 20\n#### 20")
+    # -> Learner called:
+    #    4. Replication: "10 * 2 = 20\n#### 20"
+    #    5. Rule: "Multiplication by 2 doubles the amount."
+    # Task 2:
+    # 6. Proposer receives recalled exemplar and succeeds: "10 * 2 = 20\n#### 20"
+    local = MockLocalClient([
+        "10 * 2 = 12\n#### 12",
+        "Error.\nREVIEW: REVISE",
+        "10 * 2 = 15\n#### 15",
+        "Replication: 10 * 2 = 20\n#### 20",
+        "Rule: Multiplication by 2 doubles the amount.",
+        "With past lesson in mind: 10 * 2 = 20\n#### 20",
+    ])
+    cloud = MockCloudClient("Expert Cloud Solution: 10 * 2 = 20\n#### 20")
+
+    strat = LocalPeerReviewStrategy(local, cloud, experience_bank=bank)
+
+    # --- Run Task 1 ---
+    res1 = strat.run({"id": "t1", "question": "Calculate 10 times 2"})
+    assert res1["escalated"] is True
+    assert res1["cloud_calls"] == 1
+    assert bank.count() == 1
+    assert res1["grade_verdict"] == "PASS"
+
+    # --- Run Task 2 (Similar question) ---
+    res2 = strat.run({"id": "t2", "question": "Calculate 10 times 2 again"})
+    assert res2["escalated"] is False
+    assert res2["cloud_calls"] == 0
+    assert res2["recalled_exemplar"] is True
+    assert res2["predicted_numeric"] == "20"

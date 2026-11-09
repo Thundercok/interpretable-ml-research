@@ -8,6 +8,7 @@ from typing import Any
 from benchmarks.selective_delegation.clients.base import CloudModelClient
 from benchmarks.selective_delegation.evaluation.step_verifier import verify_solution
 from benchmarks.selective_delegation.strategies.local_only import SYSTEM_PROMPT
+from rat.engine.experience_bank import ExperienceBank, ReplicateAndGradeEngine
 
 CRITIC_PROMPT = """You are a rigorous mathematical peer reviewer.
 Read the problem and the proposer's draft solution.
@@ -46,6 +47,9 @@ class LocalPeerReviewStrategy:
         cloud_max_tokens: int = 2048,
         timeout: float = 180.0,
         max_revisions: int = 1,
+        experience_bank: ExperienceBank | None = None,
+        learner: ReplicateAndGradeEngine | None = None,
+        auto_learn: bool = True,
     ):
         self.local_client = local_client
         self.cloud_client = cloud_client
@@ -53,6 +57,11 @@ class LocalPeerReviewStrategy:
         self.cloud_max_tokens = cloud_max_tokens
         self.timeout = timeout
         self.max_revisions = max_revisions
+        self.experience_bank = experience_bank
+        if experience_bank is not None and learner is None and auto_learn:
+            self.learner = ReplicateAndGradeEngine(experience_bank, local_client, timeout=timeout)
+        else:
+            self.learner = learner
 
     def run(self, task: dict[str, Any]) -> dict[str, Any]:
         started = time.perf_counter()
@@ -62,11 +71,22 @@ class LocalPeerReviewStrategy:
         total_comp_tokens = 0
         peer_revisions = 0
         peer_saved_escalation = False
+        exemplar_context = ""
+
+        # Step 0: Recall relevant past lessons from ExperienceBank
+        if self.experience_bank:
+            relevant = self.experience_bank.retrieve_relevant(question, limit=1)
+            if relevant:
+                exemplar_context = self.experience_bank.format_exemplar_context(relevant)
+
+        user_content = question
+        if exemplar_context:
+            user_content = f"{question}\n\n[In-Context Memory Guidance from Past Lesson]\n{exemplar_context}"
 
         # Phase 1: Proposer initial generation
         proposer_messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": question},
+            {"role": "user", "content": user_content},
         ]
         resp_prop = self.local_client.chat_with_meta(
             proposer_messages, tools=[], timeout=self.timeout, max_tokens=self.local_max_tokens, thinking=False
@@ -98,6 +118,7 @@ class LocalPeerReviewStrategy:
                 "escalated": False,
                 "peer_revisions": 0,
                 "peer_saved_escalation": False,
+                "recalled_exemplar": bool(exemplar_context),
             }
 
         # Phase 2: Critic Review
@@ -166,6 +187,7 @@ class LocalPeerReviewStrategy:
                     "peer_revisions": peer_revisions,
                     "peer_saved_escalation": True,
                     "critic_feedback": critic_text,
+                    "recalled_exemplar": bool(exemplar_context),
                 }
 
         # Phase 4: Escalation to Cloud if peer review still failed
@@ -192,6 +214,22 @@ class LocalPeerReviewStrategy:
         cloud_in = cloud_resp.get("input_tokens") or 0
         cloud_out = cloud_resp.get("output_tokens") or 0
 
+        # Post-Escalation Learning: Trigger Replicate & Grade
+        learned_rule = None
+        grade_verdict = None
+        if self.learner and cloud_content:
+            try:
+                rec = self.learner.replicate_and_grade(
+                    question=question,
+                    failed_draft=current_content,
+                    gold_solution=cloud_content,
+                    task_id=task.get("id"),
+                )
+                learned_rule = rec.learned_rule
+                grade_verdict = rec.grade_verdict
+            except Exception:
+                pass
+
         return {
             "final_answer": cloud_content,
             "predicted_numeric": cloud_v.predicted_numeric,
@@ -213,4 +251,7 @@ class LocalPeerReviewStrategy:
             "peer_revisions": peer_revisions,
             "peer_saved_escalation": False,
             "critic_feedback": critic_text,
+            "learned_rule": learned_rule,
+            "grade_verdict": grade_verdict,
+            "recalled_exemplar": bool(exemplar_context),
         }

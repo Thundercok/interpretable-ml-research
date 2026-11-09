@@ -23,6 +23,7 @@ from benchmarks.selective_delegation.strategies.selective import SelectiveStrate
 from benchmarks.selective_delegation.strategies.frugalgpt import FrugalGPTStrategy
 from benchmarks.selective_delegation.strategies.automix import AutoMixStrategy
 from benchmarks.selective_delegation.strategies.peer_review import LocalPeerReviewStrategy
+from rat.engine.experience_bank import ExperienceBank
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = ROOT / "benchmarks/selective_delegation/config/v1.yaml"
@@ -87,7 +88,15 @@ def build_strategy(
     if strat in ("peer_review", "peer", "b6"):
         if cloud_client is None:
             raise RuntimeError("Cloud client is required for Peer Review. Provide API key.")
-        return LocalPeerReviewStrategy(local_client, cloud_client, local_max_tokens=l_max, cloud_max_tokens=c_max, timeout=l_timeout)
+        bank = ExperienceBank(ROOT / "data/benchmark_experience_bank.db")
+        return LocalPeerReviewStrategy(
+            local_client,
+            cloud_client,
+            local_max_tokens=l_max,
+            cloud_max_tokens=c_max,
+            timeout=l_timeout,
+            experience_bank=bank,
+        )
 
     raise ValueError(f"Unknown strategy: {strategy_id}. Available: b0, b1, b2, b3, b4, b5, b6, frugalgpt, automix, peer_review, all")
 
