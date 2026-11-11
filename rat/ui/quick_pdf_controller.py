@@ -1479,6 +1479,9 @@ class QuickPDFController(QObject):
             self._status = "Đã trả lời · có thể hỏi tiếp"
 
         self._events.append(self._status)
+        blocked = curr_telem.get("blocked_actions")
+        if blocked:
+            self._events.append(f"Chuột đã chặn: {blocked[0]['label']}. Tệp tự yêu cầu việc này; muốn làm thì bạn cứ bảo.")
         self.changed.emit()
 
     @pyqtSlot(str, int, str)

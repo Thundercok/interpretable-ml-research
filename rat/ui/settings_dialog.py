@@ -4,6 +4,7 @@ rat.ui.settings_dialog — Settings dialog for folder management, indexing, and 
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional
 
@@ -29,6 +30,9 @@ from PyQt6.QtWidgets import (
 from rat.config import config
 from rat.crawler.db import Database
 from rat.crawler.indexer import Indexer
+
+
+logger = logging.getLogger(__name__)
 
 
 class IndexWorker(QThread):

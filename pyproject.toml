@@ -28,6 +28,8 @@ dependencies = [
     "pyobjc-core>=11.0; sys_platform == 'darwin'",
     "pyobjc-framework-Cocoa>=11.0; sys_platform == 'darwin'",
     "pyobjc-framework-Quartz>=11.0; sys_platform == 'darwin'",
+    "scikit-learn>=1.5.0",
+    "gymnasium>=1.0.0",
 ]
 
 [tool.uv]

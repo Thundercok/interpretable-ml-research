@@ -19,6 +19,8 @@ READS_OUTSIDE_CONTENT = frozenset({
     "read_document", "read_book_page", "search_book_pages", "expand_document_context",
     "search_documents", "find_file_or_app", "inspect_artifact", "read_web_page",
     "import_schedule", "load_reading_profile", "inspect_archive", "search_filesystem_live",
+    # A diff or a pull request carries text other people wrote, comments included.
+    "review_local_diff", "review_github_pr",
 })
 
 # No effect outside this run: they read, compute, or arrange what is already on screen.
@@ -29,6 +31,7 @@ SAFE_AFTER_OUTSIDE_CONTENT = frozenset({
     "get_group_availability", "get_schedule", "locate_room", "request_operation_tools",
     "search_birth_places", "select_work_results", "update_task_state",
     "create_natal_chart", "synthesize_reading_draft",
+    "review_local_diff",  # reads the local git diff; nothing leaves the machine
 })
 
 # Tool -> words, without accents, that show the user asked for this kind of action themselves.
@@ -51,7 +54,13 @@ ASKED_FOR_BY = {
     "translate_text": r"dich|translate",
     "dismiss_pending_input": r"bo|huy|thoi|cancel|dismiss",
     "read_web_page": r"https?",
+    # Fetching a PR to review it; posting the review is checked separately in _user_asked.
+    "review_github_pr": r"review|pr|pull request|xem|kiem tra|danh gia|nhan xet",
 }
+# Words that show the user wants a review posted publicly, not just read.
+# Phrases, not single words: without accents "đăng" (post) and "đang" (currently) both read "dang".
+POST_REVIEW_WORDS = (r"post|submit|publish|comment|binh luan"
+                     r"|dang len|dang review|dang nhan xet|gui review|gui nhan xet")
 # Always blocked after outside content: they exist only for an explicit action in the interface.
 NEVER_AFTER_OUTSIDE_CONTENT = frozenset({
     "capture_text", "correct_captured_text", "prepare_reading_spread", "load_reading_profile",
@@ -68,6 +77,7 @@ ACTION_LABELS = {
     "record_work_note": "ghi nhớ một điều",
     "synthesize_smart_note": "lưu ghi chú",
     "translate_text": "gửi đoạn văn đi dịch",
+    "review_github_pr": "đăng review lên GitHub",
 }
 
 
@@ -108,6 +118,9 @@ class UntrustedContentGate:
         # A page the file names is how its contents would leave this machine.
         if name == "read_web_page":
             return bool(args.get("url")) and str(args["url"]) in self._raw_goal
+        # Reading a PR is fine once asked; posting to GitHub needs its own words in the request.
+        if name == "review_github_pr" and args.get("submit"):
+            return bool(re.search(rf"(?:^|\W)(?:{POST_REVIEW_WORDS})(?:\W|$)", self.goal))
         return True
 
     def check(self, name: str, args: Dict[str, Any]) -> Optional[Dict[str, str]]:

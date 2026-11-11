@@ -23,6 +23,8 @@ psutil==7.2.2
 pynput==1.8.2
 rich==15.0.0
 scipy==1.16.1
+scikit-learn==1.9.1
+gymnasium==1.4.0
 
 # Natal charts. Check the AGPL terms in rat/astrology/ephemeris/LICENSE before distributing.
 pyswisseph==2.10.3.2

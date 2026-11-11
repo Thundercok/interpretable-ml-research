@@ -182,6 +182,7 @@ class ProgressiveSearch:
         seen_bundles = {a.bundle_id for a in app_matches}
         try:
             from rat.engine.app_search import AppSearch, app_descriptions
+            from rat.engine.app_resolver import name_key
             import numpy as np
             if getattr(self, '_app_search', None) is None:
                 embed_fn = getattr(self.semantic, 'embedder', None)
