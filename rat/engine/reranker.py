@@ -58,14 +58,65 @@ def format_file_size(size_bytes: int) -> str:
 
 
 
+NON_ACRONYM_WORDS: Set[str] = {
+    "thi", "ghi", "chu", "tinh", "may", "on", "to", "tap", "bai", "de",
+    "hoc", "mon", "lop", "khoa", "nhom", "tiet", "phong", "buoi", "tuan",
+    "lich", "nam", "diem", "so", "sach", "slide", "tai", "lieu", "lam", "nop",
+}
+
+_CURRICULUM_ACRONYMS: Optional[Set[str]] = None
+
+
+def _get_curriculum_acronyms() -> Set[str]:
+    global _CURRICULUM_ACRONYMS
+    if _CURRICULUM_ACRONYMS is None:
+        try:
+            from rat.engine.curriculum_mapper import _CURRICULUM_CLUSTERS, generate_acronym
+            acrs = set()
+            for c in _CURRICULUM_CLUSTERS:
+                for alt in c.get("alt_codes", []):
+                    if alt.isalpha() and 2 <= len(alt) <= 7:
+                        acrs.add(alt.lower())
+                for name in c.get("names", []):
+                    a = generate_acronym(name)
+                    if a.isalpha() and 2 <= len(a) <= 7:
+                        acrs.add(a.lower())
+            _CURRICULUM_ACRONYMS = acrs
+        except Exception:
+            _CURRICULUM_ACRONYMS = set()
+    return _CURRICULUM_ACRONYMS
+
+
 def may_be_course_acronym(keyword: str, plain: str) -> bool:
     """Whether a query keyword may stand for a course name ("pttkht", "ctdl") in a file path.
 
     keyword is what the user typed ("tổ"), plain is it without accents, lowercased ("to").
     A yes here is worth +60, the largest single bonus, so a false yes buries the real file.
     """
-    # TODO(human): decide which short keywords count as course abbreviations.
-    return 2 <= len(plain) <= 7 and plain.isalpha()
+    if not (2 <= len(plain) <= 7 and plain.isalpha()):
+        return False
+
+    # 1. Any accented character means the user typed a natural word, not an acronym
+    if keyword.lower() != plain:
+        return False
+
+    # 2. Block common words and syllables that collide with paths
+    if plain in NON_ACRONYM_WORDS:
+        return False
+
+    # 3. Consonant-only strings (pttkht, ctdl, ktlt, xstk) are almost certainly acronyms
+    if set(plain).isdisjoint("aeiou"):
+        return True
+
+    # 4. Uppercase acronyms typed explicitly by user (e.g. OOP, DSA)
+    if keyword.isupper() and len(keyword) >= 2:
+        return True
+
+    # 5. Known curriculum acronyms (e.g. oop, dsa, anm, cnpm)
+    if plain in _get_curriculum_acronyms():
+        return True
+
+    return False
 
 class SearchResultItem:
     """Structured search result with context explanation, VGC verification, and metadata."""
