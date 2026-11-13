@@ -54,7 +54,7 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignHCenter
                 text: "Thử tìm theo tên tiếng Anh, alias hoặc xóa bộ lọc."
                 color: desk.muted
-                font.pixelSize: 11
+                font.pixelSize: 12
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
             }
@@ -210,7 +210,7 @@ ColumnLayout {
             Label {
                 id: bottomBarAppPath
                 text: appsBottomBar.currentApp.path || ""
-                font.pixelSize: 10
+                font.pixelSize: 11
                 color: desk.muted
                 elide: Text.ElideMiddle
                 width: Math.max(0, appShortcuts.width - bottomBarAppName.width - 290)

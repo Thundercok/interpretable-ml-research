@@ -93,7 +93,9 @@ class HyDEEngine:
         Produce a blended Dense Query Vector combining raw query + HyDE hypothetical document.
         Returns: (blended_vector, hypothetical_text, multi_queries)
         """
-        multi_queries = self.generate_multi_queries(query)
+        # No caller uses reformulations, and generating them costs a second SLM round trip (~2 s).
+        # generate_multi_queries stays available for a caller that will actually search them.
+        multi_queries = [query]
         hypo_text = self.generate_hypothetical_document(query)
 
         raw_vec = self.embedder.embed_query(query)

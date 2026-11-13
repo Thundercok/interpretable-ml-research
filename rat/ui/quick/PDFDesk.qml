@@ -141,21 +141,22 @@ Rectangle {
     readonly property bool noticeVisible: liveMode ? unread && !expanded : phase === "result" && unread && !expanded
     readonly property string sceneKey: hasWorkbench ? (expanded ? phase : unread ? "unread" : "folded") : phase
     readonly property bool animationsRunning: composerResize.running || paperMove.running
-    readonly property color ink: darkMode ? "#eef0e9" : "#2c302a"
-    readonly property color muted: darkMode ? "#b7bdaf" : "#62695e"
-    readonly property color paperColor: darkMode ? "#272d25" : "#fdfdf9"
-    readonly property color inputColor: darkMode ? "#2b3227" : "#fdfefb"
-    readonly property color backingColor: darkMode ? "#3a4332" : "#e8ece1"
-    readonly property color edge: darkMode ? "#424d39" : "#e0e5d8"
-    readonly property color accent: darkMode ? "#c0d2a7" : "#4f6740"
-    readonly property color accentText: darkMode ? "#24301b" : "#fafcf5"
-    readonly property color warningInk: darkMode ? "#e4bb89" : "#916329"
-    readonly property color pdfInk: darkMode ? "#dbaa9f" : "#a15e50"
+    property DeskTheme deskTheme: DeskTheme { darkMode: desk.darkMode }
+    readonly property color ink: deskTheme.ink
+    readonly property color muted: deskTheme.muted
+    readonly property color paperColor: deskTheme.paperColor
+    readonly property color inputColor: deskTheme.inputColor
+    readonly property color backingColor: deskTheme.backingColor
+    readonly property color edge: deskTheme.edge
+    readonly property color accent: deskTheme.accent
+    readonly property color accentText: deskTheme.accentText
+    readonly property color warningInk: deskTheme.warningInk
+    readonly property color pdfInk: deskTheme.pdfInk
     // Shared states for the live desk; retain the existing paper/sage palette.
-    readonly property color selectedSurface: darkMode ? "#2d3727" : "#edf4e8"
-    readonly property color selectedEdge: darkMode ? "#46593d" : "#b5ceaa"
-    readonly property color utilitySurface: darkMode ? "#242820" : "#f0f4ea"
-    readonly property color hoverSurface: darkMode ? "#2a3125" : "#f1f6ed"
+    readonly property color selectedSurface: deskTheme.selectedSurface
+    readonly property color selectedEdge: deskTheme.selectedEdge
+    readonly property color utilitySurface: deskTheme.utilitySurface
+    readonly property color hoverSurface: deskTheme.hoverSurface
     readonly property int cardRadius: 10
     readonly property int controlRadius: 10
 
@@ -212,6 +213,18 @@ Rectangle {
         unread = next.unread
     }
 
+    // Every tooltip in this window is one shared popup; dress it in the desk palette once.
+    function styleToolTips() {
+        var tip = desk.ToolTip.toolTip
+        tip.palette.toolTipBase = Qt.binding(function() { return desk.ink })
+        tip.palette.toolTipText = Qt.binding(function() { return desk.paperColor })
+        tip.font.pixelSize = 12
+        tip.padding = 7
+        if (tip.background) {
+            tip.background.radius = 7
+            tip.background.border.width = 0
+        }
+    }
     function applyScene(scene) {
         if (liveMode) return
         phase = scene === "unread" || scene === "folded" ? "result" : scene
@@ -385,7 +398,7 @@ Rectangle {
         copyFeedback.restart()
     }
     onPreviewSceneChanged: applyScene(previewScene)
-    Component.onCompleted: { if (liveMode) syncLive(); else applyScene(previewScene); readyForMotion = true }
+    Component.onCompleted: { styleToolTips(); if (liveMode) syncLive(); else applyScene(previewScene); readyForMotion = true }
 
     Connections {
         target: desk.liveController
@@ -546,7 +559,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: "Đọc trang " + snapCard.pdfPage + " →"
                 color: desk.accent
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.weight: Font.Medium
             }
         }
@@ -644,7 +657,7 @@ Rectangle {
                 Label {
                     text: desk.liveSnapshot.fileName || "Tài liệu PDF"
                     elide: Text.ElideMiddle
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.Medium
                     color: desk.ink
                     Layout.fillWidth: true
@@ -665,7 +678,7 @@ Rectangle {
                 }
                 Label {
                     text: (desk.liveSnapshot.previewPageNumber || 1) + " / " + (desk.liveSnapshot.pageCount || 1)
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: desk.muted
                 }
                 IconButton {
@@ -726,7 +739,7 @@ Rectangle {
                     anchors.fill: parent
                     anchors.margins: 5
                     text: "Đối chiếu: “" + desk.cleanSnippetText(desk.liveSnapshot.previewSnippet || "") + "”"
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     color: desk.accent
                     elide: Text.ElideRight
                     maximumLineCount: 2
@@ -798,7 +811,7 @@ Rectangle {
                             : (desk.liveSnapshot.view === "busy" ? (desk.liveSnapshot.status || "Đang suy nghĩ…") : ("Trong tài liệu · " + (desk.liveSnapshot.fileName || "PDF")))
                         elide: Text.ElideMiddle
                         Layout.maximumWidth: Math.min(215, Math.max(80, resultPaper.width - 150))
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         font.weight: Font.Medium
                         color: desk.muted
                     }
@@ -887,7 +900,7 @@ Rectangle {
                         editable: true
                         implicitWidth: 38
                         implicitHeight: 20
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         Accessible.name: "Số trang PDF"
                         contentItem: TextInput {
                             text: pagePicker.textFromValue(pagePicker.value, pagePicker.locale)
@@ -920,7 +933,7 @@ Rectangle {
                     Label {
                         text: "/ " + (desk.liveSnapshot.pageCount || 0)
                         color: desk.muted
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                     }
                     IconButton {
                         objectName: "nextPage"
@@ -968,7 +981,7 @@ Rectangle {
                     iconName: desk.copied ? "check" : "copy"
                     leftPadding: resultPaper.width < 360 ? 5 : 8
                     rightPadding: resultPaper.width < 360 ? 5 : 8
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     onClicked: desk.requestCopy()
                 }
                 RowLayout {
@@ -980,7 +993,7 @@ Rectangle {
                     QuietButton {
                         objectName: "modeButton_minimal"
                         text: "1 Dòng"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         leftPadding: 4
                         rightPadding: 4
                         topPadding: 2
@@ -992,7 +1005,7 @@ Rectangle {
                     QuietButton {
                         objectName: "modeButton_single"
                         text: "1 Cột"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         leftPadding: 4
                         rightPadding: 4
                         topPadding: 2
@@ -1004,7 +1017,7 @@ Rectangle {
                     QuietButton {
                         objectName: "modeButton_multi"
                         text: "Đa Cột"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         leftPadding: 4
                         rightPadding: 4
                         topPadding: 2
@@ -1138,7 +1151,7 @@ Rectangle {
                             textFormat: Text.PlainText
                             elide: Text.ElideMiddle
                             color: desk.muted
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             ToolTip.visible: pageMetaMouse.containsMouse
                             ToolTip.text: desk.liveSnapshot.fileName || ""
                             MouseArea {
@@ -1154,7 +1167,7 @@ Rectangle {
                         objectName: "openOriginalExternal"
                         text: resultPaper.width < 420 ? "PDF gốc" : "Mở PDF gốc"
                         iconName: "external"
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         leftPadding: 6
                         rightPadding: 8
                         Accessible.name: "Mở PDF gốc bằng ứng dụng ngoài"
@@ -1282,7 +1295,7 @@ Rectangle {
                                     spacing: 6
                                     Label {
                                         text: "BẠN HỎI"
-                                        font.pixelSize: 10
+                                        font.pixelSize: 11
                                         font.weight: Font.DemiBold
                                         font.letterSpacing: 0.5
                                         color: desk.accent
@@ -1319,7 +1332,8 @@ Rectangle {
                                         elide: desk.answerQuestionOpen ? Text.ElideNone : Text.ElideRight
                                     }
                                     background: Item {}
-                                    ToolTip.visible: hovered
+                                    ToolTip.visible: hovered && !desk.answerQuestionOpen && contentItem.truncated
+                                    ToolTip.delay: 600
                                     ToolTip.text: desk.liveSnapshot.userQuery || ""
                                 }
                             }
@@ -1384,7 +1398,7 @@ Rectangle {
                                                     }
                                                     Label {
                                                         text: evidenceProcessCard.width < 340 ? (modelData.shortTitle || "") : (modelData.fullTitle || "")
-                                                        font.pixelSize: 10
+                                                        font.pixelSize: 11
                                                         font.weight: Font.Medium
                                                         color: (modelData.status === "verified_fail") ? desk.warningInk :
                                                                (modelData.status === "unverified") ? desk.muted :
@@ -1397,7 +1411,7 @@ Rectangle {
                                                 visible: index < (processStepsRepeater.count - 1)
                                                 text: "→"
                                                 color: desk.muted
-                                                font.pixelSize: 10
+                                                font.pixelSize: 11
                                             }
                                         }
                                     }
@@ -1414,7 +1428,7 @@ Rectangle {
                                         bottomPadding: 2
                                         leftPadding: 4
                                         rightPadding: 4
-                                        font.pixelSize: 10
+                                        font.pixelSize: 11
                                         Accessible.name: (desk.processDetailsOpen ? "Thu gọn" : "Xem") + " chi tiết đối chiếu"
                                         Accessible.role: Accessible.Button
                                         checkable: true
@@ -1437,13 +1451,13 @@ Rectangle {
                                         spacing: 6
                                         Label {
                                             text: "Mục tiêu tìm:"
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             font.weight: Font.Medium
                                             color: desk.muted
                                         }
                                         Label {
                                             text: desk.liveSnapshot.userQuery || "Trích xuất thông tin đối chiếu"
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             color: desk.ink
                                             Layout.fillWidth: true
                                             elide: Text.ElideRight
@@ -1455,13 +1469,13 @@ Rectangle {
                                         spacing: 6
                                         Label {
                                             text: "Phạm vi đọc:"
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             font.weight: Font.Medium
                                             color: desk.muted
                                         }
                                         Label {
                                             text: desk.liveSnapshot.answerReadScope || (desk.liveSnapshot.fileName ? desk.liveSnapshot.fileName + " · Toàn văn / Đoạn trích" : "Tài liệu được chọn")
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             color: desk.ink
                                             Layout.fillWidth: true
                                             elide: Text.ElideRight
@@ -1473,13 +1487,13 @@ Rectangle {
                                         spacing: 6
                                         Label {
                                             text: "Kiểm chứng:"
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             font.weight: Font.Medium
                                             color: desk.muted
                                         }
                                         Label {
                                             text: desk.liveSnapshot.answerVerification === "PASS" ? "Đạt kiểm tra đối chiếu nguồn gốc" : (desk.liveSnapshot.answerVerification === "FAIL" ? "Kiểm tra không khớp nội dung" : "Tổng hợp từ tài liệu")
-                                            font.pixelSize: 11
+                                            font.pixelSize: 12
                                             color: desk.liveSnapshot.answerVerification === "FAIL" ? desk.warningInk : desk.accent
                                             font.weight: Font.Medium
                                             Layout.fillWidth: true
@@ -1497,13 +1511,13 @@ Rectangle {
                                                 spacing: 6
                                                 Label {
                                                     text: (modelData.shortTitle || "Bước") + ":"
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: 12
                                                     font.weight: Font.Medium
                                                     color: desk.muted
                                                 }
                                                 Label {
                                                     text: modelData.detail || ""
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: 12
                                                     color: desk.ink
                                                     Layout.fillWidth: true
                                                     elide: Text.ElideRight
@@ -1512,7 +1526,7 @@ Rectangle {
                                             Label {
                                                 visible: Boolean(modelData.thought)
                                                 text: modelData.thought || ""
-                                                font.pixelSize: 11
+                                                font.pixelSize: 12
                                                 font.italic: true
                                                 color: desk.muted
                                                 Layout.fillWidth: true
@@ -1530,7 +1544,7 @@ Rectangle {
                             spacing: 6
                             Label {
                                 text: "CHUỘT TRẢ LỜI"
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 font.weight: Font.DemiBold
                                 font.letterSpacing: 0.5
                                 color: desk.muted
@@ -1539,7 +1553,7 @@ Rectangle {
                                 id: answerDocSep
                                 visible: Boolean(answerDocumentLabel.text)
                                 text: "·"
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: desk.muted
                                 opacity: 0.7
                             }
@@ -1553,7 +1567,7 @@ Rectangle {
                                     }
                                     return desk.liveSnapshot.fileName || ""
                                 }
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.Medium
                                 color: desk.accent
                                 elide: Text.ElideMiddle
@@ -1565,7 +1579,7 @@ Rectangle {
                             Label {
                                 visible: Boolean(answerStatus.text)
                                 text: "·"
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: desk.muted
                                 opacity: 0.7
                             }
@@ -1584,7 +1598,7 @@ Rectangle {
                                 wrapMode: Text.NoWrap
                                 elide: Text.ElideRight
                                 color: desk.muted
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                             }
                             Item { visible: !Boolean(answerStatus.text); Layout.fillWidth: true }
                             Rectangle {
@@ -1599,7 +1613,7 @@ Rectangle {
                                     id: verifBadgeLabel
                                     anchors.centerIn: parent
                                     text: desk.liveSnapshot.answerVerification === "PASS" ? "Đạt kiểm tra" : "Chưa đạt"
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     font.weight: Font.Medium
                                     color: desk.liveSnapshot.answerVerification === "FAIL" ? desk.warningInk : desk.accent
                                 }
@@ -1663,7 +1677,7 @@ Rectangle {
                                         }
                                         return "Nguồn: " + (desk.liveSnapshot.fileName || "")
                                     }
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     font.weight: Font.Medium
                                     color: desk.ink
                                     elide: Text.ElideMiddle
@@ -1680,7 +1694,7 @@ Rectangle {
                                     bottomPadding: 3
                                     leftPadding: resultPaper.width < 520 ? 4 : 6
                                     rightPadding: resultPaper.width < 520 ? 4 : 6
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     Accessible.name: desk.contextExpanded ? "Thu gọn về đoạn trích ngắn" : "Mở rộng ngữ cảnh xung quanh đoạn trích"
                                     Accessible.role: Accessible.Button
                                     ToolTip.visible: hovered
@@ -1702,7 +1716,7 @@ Rectangle {
                                     bottomPadding: 3
                                     leftPadding: resultPaper.width < 520 ? 4 : 6
                                     rightPadding: resultPaper.width < 520 ? 4 : 6
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     Accessible.name: "Sao chép trích dẫn và nguồn"
                                     Accessible.role: Accessible.Button
                                     ToolTip.visible: hovered
@@ -1728,7 +1742,7 @@ Rectangle {
                                     bottomPadding: 3
                                     leftPadding: resultPaper.width < 520 ? 4 : 6
                                     rightPadding: resultPaper.width < 520 ? 4 : 6
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     Accessible.name: "Mở tài liệu bằng ứng dụng PDF bên ngoài"
                                     Accessible.role: Accessible.Button
                                     ToolTip.visible: hovered
@@ -1767,7 +1781,7 @@ Rectangle {
                                             id: expandedTagLabel
                                             anchors.centerIn: parent
                                             text: "Ngữ cảnh mở rộng"
-                                            font.pixelSize: 10
+                                            font.pixelSize: 11
                                             font.weight: Font.Medium
                                             color: desk.accent
                                         }
@@ -1834,13 +1848,18 @@ Rectangle {
                             Item { Layout.fillWidth: true }
                             Label {
                                 objectName: "answerVerification"
-                                Layout.fillWidth: true
-                                horizontalAlignment: Text.AlignRight
                                 text: desk.liveSnapshot.answerVerification === "PASS" ? "Đạt kiểm tra được báo cáo"
                                     : desk.liveSnapshot.answerVerification === "FAIL" ? "Kiểm tra chưa đạt" : "Chưa được xác minh"
                                 color: desk.liveSnapshot.answerVerification === "FAIL" ? desk.warningInk : desk.muted
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 wrapMode: Text.Wrap
+                                Accessible.description: desk.liveSnapshot.answerVerification === "FAIL"
+                                    ? "Bước kiểm tra báo câu trả lời chưa khớp với nguồn. Hãy mở nguồn để đối chiếu."
+                                    : (desk.liveSnapshot.answerVerification !== "PASS" ? "Chưa có bước kiểm tra nào xác nhận câu trả lời này. Hãy mở nguồn để tự đối chiếu." : "")
+                                HoverHandler { id: verificationHover }
+                                ToolTip.visible: verificationHover.hovered && desk.liveSnapshot.answerVerification !== "PASS"
+                                ToolTip.delay: 600
+                                ToolTip.text: Accessible.description
                             }
                         }
                         ColumnLayout {
@@ -1996,7 +2015,7 @@ Rectangle {
                                         text: desk.liveSnapshot.hasMatchedSnippet
                                             ? ("Đoạn khớp với từ khóa \"" + (desk.liveSnapshot.matchedQuery || desk.liveSnapshot.searchQuery || "") + "\"")
                                             : "Đoạn nguồn"
-                                        font.pixelSize: 11
+                                        font.pixelSize: 12
                                         font.weight: Font.Medium
                                         color: desk.accent
                                         wrapMode: Text.Wrap
@@ -2006,8 +2025,8 @@ Rectangle {
                                 Label {
                                     visible: Boolean(desk.liveSnapshot.hasMatchedSnippet && desk.liveSnapshot.matchedSnippetTruncated)
                                     Layout.leftMargin: 12
-                                    text: "Trích đoạn (…)"
-                                    font.pixelSize: 10
+                                    text: "Đoạn trích đã được rút gọn"
+                                    font.pixelSize: 11
                                     color: desk.muted
                                 }
                             }
@@ -2048,7 +2067,7 @@ Rectangle {
                             Label {
                                 visible: Boolean(desk.liveSnapshot.hasMatchedSnippet)
                                 text: "Bôi chọn phần cần lấy hoặc bấm Chép đoạn để sao chép cả đoạn nguồn."
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: desk.muted
                                 wrapMode: Text.Wrap
                                 Layout.fillWidth: true
@@ -2068,7 +2087,7 @@ Rectangle {
                                     objectName: "openOriginalFallback"
                                     text: "Mở PDF gốc"
                                     iconName: "external"
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     leftPadding: 6
                                     rightPadding: 8
                                     Accessible.name: "Mở PDF gốc bằng ứng dụng ngoài"
@@ -2161,7 +2180,7 @@ Rectangle {
                             text: "Chi tiết & nhật ký"
                             iconName: desk.logOpen ? "chevron-down" : "chevron-right"
                             iconSize: 13
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             leftPadding: 0
                             topPadding: 4
                             bottomPadding: 4
@@ -2273,7 +2292,7 @@ Rectangle {
                             : desk.hasReadingPreview ? (((desk.liveSnapshot.readingSession || {}).chart || {}).name || "Chưa mở hồ sơ lá số")
                             : desk.hasAnswerPreview ? desk.previewMeta : desk.hasPagePreview ? desk.liveSnapshot.fileName : "Kết quả mới"
                         textFormat: Text.PlainText
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         color: desk.incompletePreview || desk.liveSnapshot.answerVerification === "FAIL" ? desk.warningInk : desk.muted
                         wrapMode: desk.hasPagePreview || desk.hasFinderPreview ? Text.NoWrap : Text.Wrap
                         maximumLineCount: desk.hasPagePreview || desk.hasFinderPreview ? 1 : 2
@@ -2354,7 +2373,7 @@ Rectangle {
                 }
                 Label {
                     text: desk.allFinderHits.length + " tệp/app khớp · Xem"
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.Medium
                     color: desk.accent
                 }
@@ -2439,7 +2458,7 @@ Rectangle {
                     bottomPadding: 2
                     leftPadding: 8
                     rightPadding: 8
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     enabled: !desk.liveSnapshot.busy && pdfSearchField.text.trim().length > 0
                     onClicked: desk.runPdfSearchAction()
                 }
@@ -2522,20 +2541,20 @@ Rectangle {
                         }
                         Label {
                             text: "1 câu"
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             font.weight: Font.Medium
                             color: desk.accent
                         }
                         Label {
                             Layout.fillWidth: true
                             text: desk.liveSnapshot.oneLineAnswer || desk.liveSnapshot.answerExcerpt
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             color: desk.ink
                             elide: Text.ElideRight
                         }
                         QuietButton {
                             text: "Mở rộng"
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             topPadding: 2
                             bottomPadding: 2
                             leftPadding: 4
@@ -2574,7 +2593,7 @@ Rectangle {
                             iconSize: 14
                             trailingIconSize: 0
                             elideText: true
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             topPadding: 2
                             bottomPadding: 2
                             leftPadding: 4
@@ -2624,7 +2643,7 @@ Rectangle {
 
                     Label {
                         text: "Gợi ý hỏi:"
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         color: desk.muted
                         opacity: 0.8
                     }
@@ -2637,7 +2656,7 @@ Rectangle {
                             Behavior on opacity { NumberAnimation { duration: 120 } }
                             Label {
                                 text: modelData.label || ""
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: promptHover.hovered ? desk.accent : desk.muted
                                 font.underline: promptHover.hovered
                                 HoverHandler { id: promptHover }
@@ -2653,7 +2672,7 @@ Rectangle {
                             Label {
                                 visible: index < (desk.liveSnapshot.quickPrompts.length - 1)
                                 text: "·"
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: desk.muted
                                 opacity: 0.5
                             }
@@ -2851,14 +2870,14 @@ Rectangle {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    Label { visible: desk.phase === "idle" && !desk.liveMode; text: "↵ Gửi · ⇧↵ Xuống dòng"; color: desk.muted; font.pixelSize: 11 }
+                    Label { visible: desk.phase === "idle" && !desk.liveMode; text: "↵ Gửi · ⇧↵ Xuống dòng"; color: desk.muted; font.pixelSize: 12 }
                     Label {
                         objectName: "uiBuildLabel"
                         visible: desk.liveMode
                         text: desk.uiBuildLabel
                         textFormat: Text.PlainText
                         color: desk.muted
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         opacity: 0.65
                         topPadding: 4
                         bottomPadding: 4
@@ -2877,7 +2896,7 @@ Rectangle {
                             text: "·"
                             color: desk.muted
                             opacity: 0.65
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                         }
                         Rectangle {
                             visible: !pdfDropArea.containsDrag && !desk.liveSnapshot.busy && desk.liveSnapshot.view === "none" && !desk.liveSnapshot.fileName
@@ -2900,7 +2919,7 @@ Rectangle {
                             elide: Text.ElideRight
                             color: pdfDropArea.containsDrag ? desk.accent : desk.muted
                             font.weight: pdfDropArea.containsDrag ? Font.Medium : Font.Normal
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                         }
                     }
                     QuietButton {
@@ -2949,7 +2968,7 @@ Rectangle {
                     text: desk.liveSnapshot.launchFeedback || ""
                     textFormat: Text.PlainText
                     color: desk.liveSnapshot.launchFeedbackError ? desk.pdfInk : desk.accent
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
                     Accessible.name: text
@@ -2960,7 +2979,7 @@ Rectangle {
                     text: desk.liveSnapshot.finderFeedback || ""
                     textFormat: Text.PlainText
                     color: desk.muted
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
                     Accessible.name: text

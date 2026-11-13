@@ -18,7 +18,7 @@ ColumnLayout {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 3
-            Label { text: "BÀN XEM · 01"; color: reading.host.accent; font.pixelSize: 10; font.letterSpacing: 2 }
+            Label { text: "BÀN XEM · 01"; color: reading.host.accent; font.pixelSize: 11; font.letterSpacing: 2 }
             Label { text: "Đặt bài. Ngắm lá số."; color: reading.host.ink; font.family: "Georgia"; font.pixelSize: 23; wrapMode: Text.Wrap; Layout.fillWidth: true }
         }
         Button {
@@ -91,12 +91,12 @@ ColumnLayout {
             }
             Label {
                 text: reading.session.chart ? reading.session.chart.date + " · " + reading.session.chart.time : ""
-                textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 11; color: reading.host.muted
+                textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12; color: reading.host.muted
                 Layout.fillWidth: true
             }
             Label {
                 text: reading.session.chart ? reading.session.chart.place : ""
-                textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 11; color: reading.host.muted
+                textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12; color: reading.host.muted
                 Layout.fillWidth: true
             }
             Repeater {
@@ -104,7 +104,7 @@ ColumnLayout {
                 Label {
                     required property var modelData
                     text: modelData.name + " · " + modelData.position
-                    textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 10; color: reading.host.ink
+                    textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 11; color: reading.host.ink
                     Layout.fillWidth: true
                 }
             }
@@ -113,18 +113,18 @@ ColumnLayout {
     Label {
         visible: natalWheel.status === Image.Loading || natalWheel.wheelFailed
         text: natalWheel.wheelFailed ? "Chưa hiển thị được vòng sao. Bạn có thể mở lại hồ sơ." : "Đang dựng vòng sao…"
-        color: reading.host.muted; font.pixelSize: 11; Layout.fillWidth: true; wrapMode: Text.Wrap
+        color: reading.host.muted; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap
     }
     Label {
         visible: Boolean(reading.session.chart)
         text: reading.session.chart ? "Hồ sơ · " + reading.session.chart.fileName : ""
-        textFormat: Text.PlainText; elide: Text.ElideMiddle; font.pixelSize: 10; color: reading.host.muted
+        textFormat: Text.PlainText; elide: Text.ElideMiddle; font.pixelSize: 11; color: reading.host.muted
         Layout.fillWidth: true
     }
     Label {
         visible: Boolean(reading.session.chart && reading.session.chart.notices.length)
         text: reading.session.chart ? reading.session.chart.notices.join("\n") : ""
-        textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 11; color: reading.host.muted
+        textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pixelSize: 12; color: reading.host.muted
         Layout.fillWidth: true
     }
 
@@ -138,15 +138,15 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true
-        Label { text: "TRẢI BÀI"; color: reading.host.accent; font.pixelSize: 10; font.letterSpacing: 2; Layout.fillWidth: true }
+        Label { text: "TRẢI BÀI"; color: reading.host.accent; font.pixelSize: 11; font.letterSpacing: 2; Layout.fillWidth: true }
         Button {
             text: reading.allCardsFaceUp ? "Úp toàn bộ bài" : "Lật mở toàn bộ"
             visible: Boolean((reading.session.cards || []).length)
             onClicked: reading.allCardsFaceUp = !reading.allCardsFaceUp
             background: Rectangle { radius: 6; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.edge }
-            contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+            contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
         }
-        Label { text: (reading.session.cards || []).length + " lá · nhập tay"; color: reading.host.muted; font.pixelSize: 11 }
+        Label { text: (reading.session.cards || []).length + " lá · nhập tay"; color: reading.host.muted; font.pixelSize: 12 }
     }
     RowLayout {
         Layout.fillWidth: true
@@ -172,7 +172,7 @@ ColumnLayout {
     Label {
         visible: Boolean(reading.session.error)
         text: reading.session.error || ""
-        color: reading.host.pdfInk; font.pixelSize: 11; wrapMode: Text.Wrap
+        color: reading.host.pdfInk; font.pixelSize: 12; wrapMode: Text.Wrap
         textFormat: Text.PlainText; Layout.fillWidth: true
     }
     Label {
@@ -197,7 +197,7 @@ ColumnLayout {
                 spacing: 5
                 Label {
                     text: cardColumn.modelData.jumper ? "LÁ RƠI" : "VỊ TRÍ " + cardColumn.modelData.position
-                    font.pixelSize: 9; font.letterSpacing: 1.2; color: reading.host.muted
+                    font.pixelSize: 11; font.letterSpacing: 1.2; color: reading.host.muted
                 }
                 Rectangle {
                     id: cardSurface
@@ -273,7 +273,7 @@ ColumnLayout {
                         Label {
                             anchors.centerIn: parent
                             text: "RAT"
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             font.letterSpacing: 2
                             font.family: "Georgia"
                             color: reading.host.accent
@@ -281,7 +281,7 @@ ColumnLayout {
                         Label {
                             anchors.bottom: parent.bottom; anchors.bottomMargin: 14; anchors.horizontalCenter: parent.horizontalCenter
                             text: "Bấm để lật"
-                            font.pixelSize: 9
+                            font.pixelSize: 11
                             color: reading.host.muted
                         }
                     }
@@ -334,7 +334,7 @@ ColumnLayout {
                             }
                             Label {
                                 width: parent.width; text: cardColumn.modelData.reversed ? "NGƯỢC ↻" : "XUÔI"
-                                horizontalAlignment: Text.AlignHCenter; font.pixelSize: 9; color: reading.host.muted
+                                horizontalAlignment: Text.AlignHCenter; font.pixelSize: 11; color: reading.host.muted
                             }
                         }
                     }
@@ -359,7 +359,7 @@ ColumnLayout {
         text: reading.selectedCard >= 0 && reading.selectedCard < (reading.session.cards || []).length
             ? reading.session.cards[reading.selectedCard].title + " · " + (reading.session.cards[reading.selectedCard].jumper ? "Lá rơi, ngoài thứ tự trải" : "Vị trí " + reading.session.cards[reading.selectedCard].position)
             : "Ký hiệu minh họa của RAT · Chọn một lá để đối chiếu vị trí."
-        color: reading.host.muted; font.pixelSize: 11; wrapMode: Text.Wrap; Layout.fillWidth: true
+        color: reading.host.muted; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true
     }
         }
     }
@@ -374,7 +374,7 @@ ColumnLayout {
             Layout.fillWidth: true
             Label {
                 text: "BẢN LUẬN · CHƯA TẠO"
-                color: reading.host.muted; font.pixelSize: 10; font.letterSpacing: 1.5; Layout.fillWidth: true
+                color: reading.host.muted; font.pixelSize: 11; font.letterSpacing: 1.5; Layout.fillWidth: true
             }
             Button {
                 objectName: "readingSynthesizeButton"
@@ -404,7 +404,7 @@ ColumnLayout {
                 spacing: 3
                 Label {
                     text: "BẢN LUẬN · REASONING DRAFT"
-                    color: reading.host.accent; font.pixelSize: 10; font.letterSpacing: 1.5
+                    color: reading.host.accent; font.pixelSize: 11; font.letterSpacing: 1.5
                 }
                 Label {
                     text: (reading.session.draft || {}).title || "Bản luận trải bài"
@@ -419,21 +419,21 @@ ColumnLayout {
                     text: "Tạo Smart Note"
                     onClicked: reading.host.liveController.synthesizeNoteFromReadingDraft("decision")
                     background: Rectangle { radius: 8; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.accent }
-                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; font.weight: Font.Medium; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 12; font.weight: Font.Medium; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
                     objectName: "readingEditDraftButton"
                     text: reading.isEditingDraft ? "Hủy sửa" : "Sửa bản nháp"
                     onClicked: reading.isEditingDraft = !reading.isEditingDraft
                     background: Rectangle { radius: 8; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.edge }
-                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
                     objectName: "readingResynthesizeButton"
                     text: "Soạn lại"
                     onClicked: reading.host.liveController.synthesizeReadingDraft("")
                     background: Rectangle { radius: 8; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.edge }
-                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
             }
         }
@@ -445,7 +445,7 @@ ColumnLayout {
             spacing: 8
             Label {
                 text: "LÁ TRONG BẢN LUẬN:"
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.letterSpacing: 1.2
                 color: reading.host.muted
             }
@@ -469,13 +469,13 @@ ColumnLayout {
                             spacing: 4
                             Label {
                                 text: modelData.numeral || ""
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 color: reading.host.accent
                                 font.weight: Font.Medium
                             }
                             Label {
                                 text: modelData.title + (modelData.reversed ? " (ngược)" : "")
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 color: reading.host.ink
                             }
                         }
@@ -597,7 +597,7 @@ ColumnLayout {
                     Label {
                         text: "GHI CHÚ CÓ CẤU TRÚC · SOL-PI"
                         color: reading.host.accent
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.letterSpacing: 1.5
                     }
                     Rectangle {
@@ -610,7 +610,7 @@ ColumnLayout {
                             id: revLabel
                             anchors.centerIn: parent
                             text: "rev " + ((reading.session.activeNote || {}).revision || 1)
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             color: reading.host.accent
                         }
                     }
@@ -624,7 +624,7 @@ ColumnLayout {
                             id: domainLabel
                             anchors.centerIn: parent
                             text: (reading.session.activeNote || {}).domain || "decision"
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             color: reading.host.muted
                         }
                     }
@@ -642,7 +642,7 @@ ColumnLayout {
             Label {
                 text: "Đã kiểm chứng · PASS"
                 color: reading.host.accent
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.weight: Font.Medium
             }
         }
@@ -654,7 +654,7 @@ ColumnLayout {
             spacing: 6
             Label {
                 text: "DỮ KIỆN NỀN TẢNG (" + (((reading.session.activeNote || {}).key_facts || []).length) + " mục)"
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.letterSpacing: 1.2
                 color: reading.host.muted
             }
@@ -688,7 +688,7 @@ ColumnLayout {
                         Label {
                             visible: Boolean(modelData.source)
                             text: "[" + (modelData.source || "") + "]"
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             color: reading.host.muted
                         }
                     }
@@ -703,7 +703,7 @@ ColumnLayout {
             spacing: 6
             Label {
                 text: "KẾ HOẠCH HÀNH ĐỘNG (" + (((reading.session.activeNote || {}).action_items || []).length) + " việc)"
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.letterSpacing: 1.2
                 color: reading.host.muted
             }
@@ -773,7 +773,7 @@ ColumnLayout {
                                 id: priorityText
                                 anchors.centerIn: parent
                                 text: (modelData.priority || "").toUpperCase()
-                                font.pixelSize: 9
+                                font.pixelSize: 11
                                 font.weight: Font.DemiBold
                                 color: modelData.priority === "high" ? "#c0392b" : reading.host.muted
                             }
@@ -790,7 +790,7 @@ ColumnLayout {
             spacing: 8
             Label {
                 text: "MỤC PHÂN TÍCH & ĐÀO SÂU"
-                font.pixelSize: 10
+                font.pixelSize: 11
                 font.letterSpacing: 1.2
                 color: reading.host.muted
             }
@@ -833,7 +833,7 @@ ColumnLayout {
                                     id: expBadge
                                     anchors.centerIn: parent
                                     text: "ĐÃ ĐÀO SÂU"
-                                    font.pixelSize: 9
+                                    font.pixelSize: 11
                                     color: reading.host.accent
                                 }
                             }
@@ -846,7 +846,7 @@ ColumnLayout {
                                     reading.host.liveController.expandNoteSection(noteId, heading, "Nghiên cứu sâu về " + heading, "Phân tích bổ sung về " + heading + ": Phân tích chi tiết khía cạnh thực tế.")
                                 }
                                 background: Rectangle { radius: 6; color: parent.hovered ? reading.host.selectedSurface : reading.host.paperColor; border.color: reading.host.edge }
-                                contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                             }
                         }
 

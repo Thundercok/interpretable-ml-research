@@ -40,7 +40,7 @@ Rectangle {
                         id: ichingTag
                         anchors.centerIn: parent
                         text: "🔮 QUẺ KINH DỊCH"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.weight: Font.DemiBold
                         color: desk.accent
                     }
@@ -123,7 +123,7 @@ Rectangle {
                     }
                     Label {
                         text: cardRoot.cardData ? ("Thượng: " + (cardRoot.cardData.upper_trigram || "") + " · Hạ: " + (cardRoot.cardData.lower_trigram || "")) : ""
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         color: desk.muted
                     }
                     Label {
@@ -183,7 +183,7 @@ Rectangle {
                         id: lenTag
                         anchors.centerIn: parent
                         text: "🃏 BÀI LENORMAND"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.weight: Font.DemiBold
                         color: desk.accent
                     }
@@ -221,7 +221,7 @@ Rectangle {
                             // Slot Label (Past/Present/Future)
                             Label {
                                 text: (modelData.slot || "").toUpperCase()
-                                font.pixelSize: 9
+                                font.pixelSize: 11
                                 font.weight: Font.DemiBold
                                 color: desk.muted
                                 elide: Text.ElideRight
@@ -238,7 +238,7 @@ Rectangle {
                             // Card Name
                             Label {
                                 text: modelData.name || ""
-                                font.pixelSize: 11
+                                font.pixelSize: 12
                                 font.weight: Font.DemiBold
                                 color: desk.ink
                                 elide: Text.ElideRight
@@ -248,7 +248,7 @@ Rectangle {
                             // Meaning
                             Label {
                                 text: modelData.meaning || ""
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 color: desk.muted
                                 wrapMode: Text.Wrap
                                 elide: Text.ElideRight
@@ -281,7 +281,7 @@ Rectangle {
                         id: ttTag
                         anchors.centerIn: parent
                         text: "📅 THỜI KHÓA BIỂU"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.weight: Font.DemiBold
                         color: desk.accent
                     }
@@ -295,7 +295,7 @@ Rectangle {
                 Item { Layout.fillWidth: true }
                 Label {
                     text: cardRoot.cardData && cardRoot.cardData.sessions ? (cardRoot.cardData.sessions.length + " môn học") : ""
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: desk.muted
                 }
             }
@@ -331,7 +331,7 @@ Rectangle {
                                     id: timeLbl
                                     anchors.centerIn: parent
                                     text: modelData.time || ""
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                     color: desk.accentText
                                 }
@@ -349,7 +349,7 @@ Rectangle {
                                     id: roomLbl
                                     anchors.centerIn: parent
                                     text: modelData.room ? ("Phòng " + modelData.room) : "Chưa rõ phòng"
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     color: desk.ink
                                 }
                             }
@@ -368,7 +368,7 @@ Rectangle {
                                 }
                                 Label {
                                     text: modelData.instructor ? ("GV: " + modelData.instructor) : ""
-                                    font.pixelSize: 10
+                                    font.pixelSize: 11
                                     color: desk.muted
                                     visible: Boolean(modelData.instructor)
                                 }
@@ -407,7 +407,7 @@ Rectangle {
                         id: webTag
                         anchors.centerIn: parent
                         text: "🌐 TRANG WEB"
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         font.weight: Font.DemiBold
                         color: desk.accent
                     }
@@ -424,7 +424,7 @@ Rectangle {
                         id: domLbl
                         anchors.centerIn: parent
                         text: cardRoot.cardData ? (cardRoot.cardData.domain || "") : ""
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         color: desk.accent
                     }
                 }
@@ -432,7 +432,7 @@ Rectangle {
                 QuietButton {
                     text: "Mở web"
                     plain: true
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     visible: Boolean(cardRoot.cardData && cardRoot.cardData.url)
                     onClicked: {
                         if (cardRoot.cardData && cardRoot.cardData.url) {

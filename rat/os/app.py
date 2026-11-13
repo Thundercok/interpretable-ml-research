@@ -39,16 +39,26 @@ def activate_macos_app() -> None:
 
 
 class InitialIndexWorker(QObject):
-    """Background worker that runs the first-time full index after onboarding."""
+    """Background index of the watched folders. Unchanged files are skipped by mtime and size,
+    so after the first run it only picks up what changed while RAT was closed."""
     progress = pyqtSignal(int, int, str)  # (completed, total, current_file_name)
     finished = pyqtSignal(int, int)       # (indexed_count, total)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._indexer = None
+
+    def cancel(self) -> None:
+        """Stop between files; QThread.quit() alone cannot interrupt run()."""
+        if self._indexer is not None:
+            self._indexer.cancel()
 
     def run(self) -> None:
         from rat.crawler.indexer import Indexer
         from rat.config import set_thread_qos_background
         set_thread_qos_background()
         try:
-            indexer = Indexer()
+            indexer = self._indexer = Indexer()
             indexed, total = indexer.run_full_index(
                 progress_callback=lambda c, t, name: self.progress.emit(c, t, name)
             )
@@ -233,6 +243,8 @@ class ResidentApplication(QObject):
 
         if self._index_thread and self._index_thread.isRunning():
             try:
+                if self._index_worker is not None:
+                    self._index_worker.cancel()
                 self._index_thread.quit()
             except Exception as e:
                 logger.debug(f"Error requesting _index_thread quit: {e}")
@@ -369,6 +381,8 @@ class ResidentApplication(QObject):
 
         if self._index_thread and self._index_thread.isRunning():
             try:
+                if self._index_worker is not None:
+                    self._index_worker.cancel()
                 self._index_thread.quit()
             except Exception:
                 pass
@@ -547,8 +561,16 @@ class ResidentApplication(QObject):
         except Exception as e:
             logger.error(f"Error opening compact desk: {e}", exc_info=True)
 
-    def _start_initial_index(self) -> None:
-        """Launch background initial indexing after first-run onboarding."""
+    def _start_initial_index(self, *, announce: bool = True) -> None:
+        """Index the watched folders in the background.
+
+        The watcher only sees changes while RAT runs; this catches up on the rest.
+        announce=False keeps the routine launch-time catch-up silent.
+        """
+        if getattr(self.app, "_is_quitting", False) or not config.indexed_directories:
+            return
+        if self._index_thread and self._index_thread.isRunning():
+            return
         from PyQt6.QtCore import QThread
         self._index_thread = QThread()
         self._index_worker = InitialIndexWorker()
@@ -563,8 +585,12 @@ class ResidentApplication(QObject):
 
         def _on_finished(indexed: int, total: int) -> None:
             logger.info(f"Initial index complete: {indexed}/{total} files.")
+            if total and not config.first_run_completed:
+                config.first_run_completed = True
+                config.save()
             if self.tray_manager:
                 self.tray_manager.tray_icon.setToolTip("RAT — Sẵn sàng")
+            if self.tray_manager and announce:
                 self.tray_manager.tray_icon.showMessage(
                     "RAT — Quét xong! ✅",
                     f"Đã lập chỉ mục {total} tệp tin. Bấm {config.get_hotkey_display()} để mở RAT Desk!",
@@ -681,6 +707,9 @@ class ResidentApplication(QObject):
         # 4.5. Background Semester Document Warmup (QoS Background)
         if config.auto_watch and config.indexed_directories:
             QTimer.singleShot(2500, self._start_semester_warmup)
+            # 4.6. Catch up on files changed while RAT was closed. The watcher is already running,
+            # so nothing is missed in between; a file seen by both is indexed once (mtime check).
+            QTimer.singleShot(8000, lambda: self._start_initial_index(announce=not config.first_run_completed))
 
         # 5. Open initial window based on mode
         if self.mode == "finder":

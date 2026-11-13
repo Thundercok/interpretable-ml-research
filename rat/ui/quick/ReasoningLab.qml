@@ -11,20 +11,22 @@ Rectangle {
     readonly property var steps: result.steps || []
     readonly property bool hasResult: steps.length > 0
 
-    readonly property color ink: darkMode ? "#eef0e9" : "#2c302a"
-    readonly property color muted: darkMode ? "#b7bdaf" : "#62695e"
-    readonly property color paperColor: darkMode ? "#272d25" : "#fdfdf9"
-    readonly property color inputColor: darkMode ? "#2b3227" : "#fdfefb"
-    readonly property color backingColor: darkMode ? "#1f241c" : "#e8ece1"
-    readonly property color edge: darkMode ? "#424d39" : "#e0e5d8"
-    readonly property color accent: darkMode ? "#c0d2a7" : "#4f6740"
-    readonly property color accentText: darkMode ? "#24301b" : "#fafcf5"
-    readonly property color warningInk: darkMode ? "#e4bb89" : "#916329"
+    property DeskTheme deskTheme: DeskTheme { darkMode: desk.darkMode }
+    readonly property color ink: deskTheme.ink
+    readonly property color muted: deskTheme.muted
+    readonly property color paperColor: deskTheme.paperColor
+    readonly property color inputColor: deskTheme.inputColor
+    // Here this is the window behind the cards, so in the dark it must stay darker than paperColor.
+    readonly property color backingColor: darkMode ? "#1f241c" : deskTheme.backingColor
+    readonly property color edge: deskTheme.edge
+    readonly property color accent: deskTheme.accent
+    readonly property color accentText: deskTheme.accentText
+    readonly property color warningInk: deskTheme.warningInk
     readonly property color wrongInk: darkMode ? "#dbaa9f" : "#a15e50"
-    readonly property color selectedSurface: darkMode ? "#2d3727" : "#edf4e8"
-    readonly property color selectedEdge: darkMode ? "#46593d" : "#b5ceaa"
-    readonly property color utilitySurface: darkMode ? "#242820" : "#f0f4ea"
-    readonly property color hoverSurface: darkMode ? "#2a3125" : "#f1f6ed"
+    readonly property color selectedSurface: deskTheme.selectedSurface
+    readonly property color selectedEdge: deskTheme.selectedEdge
+    readonly property color utilitySurface: deskTheme.utilitySurface
+    readonly property color hoverSurface: deskTheme.hoverSurface
     readonly property string monoFont: Qt.platform.os === "osx" ? "Menlo" : "monospace"
 
     function verdictText(verdict) { return verdict === "correct" ? "Đúng" : (verdict === "wrong" ? "Sai" : "") }
@@ -77,7 +79,7 @@ Rectangle {
         Layout.fillWidth: true
         Layout.preferredWidth: 1
         Label { text: parent.value; font.pixelSize: 18; font.weight: Font.DemiBold; color: desk.ink }
-        Label { text: parent.caption; font.pixelSize: 11; color: desk.muted }
+        Label { text: parent.caption; font.pixelSize: 12; color: desk.muted }
     }
 
     component StepCard: Card {
@@ -110,7 +112,7 @@ Rectangle {
                 }
                 Label {
                     text: stepCard.open ? "Thu gọn" : "Xem chi tiết"
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: desk.muted
                     MouseArea {
                         anchors.fill: parent
@@ -129,7 +131,7 @@ Rectangle {
             }
             Label {
                 text: stepCard.step.tokens + " token · " + stepCard.step.seconds + " giây · độ tin cậy " + stepCard.step.confidence
-                font.pixelSize: 11
+                font.pixelSize: 12
                 color: desk.muted
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
@@ -353,7 +355,7 @@ Rectangle {
                                     border.color: desk.selectedEdge
                                     implicitHeight: 24
                                     implicitWidth: pathLabel.implicitWidth + 16
-                                    Label { id: pathLabel; anchors.centerIn: parent; text: parent.parent.modelData; font.pixelSize: 11; font.weight: Font.Medium; color: desk.accent }
+                                    Label { id: pathLabel; anchors.centerIn: parent; text: parent.parent.modelData; font.pixelSize: 12; font.weight: Font.Medium; color: desk.accent }
                                 }
                                 Label {
                                     visible: parent.index < (desk.result.path || []).length - 1
@@ -400,7 +402,7 @@ Rectangle {
             Label {
                 text: "Quy tắc và ngưỡng lấy từ thử nghiệm phát triển trên 45 câu GSM8K, chưa phải kết quả thí nghiệm chính. Điểm tin cậy có thể cao cả khi đáp án sai."
                       + (desk.hasResult ? "\nĐã ghi log vào " + desk.snap.logPath : "")
-                font.pixelSize: 11
+                font.pixelSize: 12
                 color: desk.muted
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true

@@ -25,7 +25,7 @@ Button {
         Label {
             text: keycapRoot.labelText
             color: keycapRoot.primary ? desk.accent : desk.muted
-            font.pixelSize: 11
+            font.pixelSize: 12
             font.weight: keycapRoot.primary ? Font.Medium : Font.Normal
         }
         Rectangle {
@@ -41,7 +41,7 @@ Button {
                 anchors.centerIn: parent
                 text: keycapRoot.keyText
                 color: keycapRoot.primary ? desk.accent : desk.muted
-                font.pixelSize: 10
+                font.pixelSize: 11
             }
         }
     }

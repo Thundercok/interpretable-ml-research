@@ -69,19 +69,20 @@ Rectangle {
     readonly property point cornerMouth: headPose.speechAnchor
     readonly property rect panelRect: !panel.visible ? Qt.rect(0,0,0,0) : Qt.rect(panel.x + panelSkin.occupiedRect.x, panel.y + panelSkin.occupiedRect.y, panelSkin.occupiedRect.width, panelSkin.occupiedRect.height)
     readonly property rect mascotRect: Qt.rect(mascotItem.x, mascotItem.y, mascotItem.width, mascotItem.height)
-    readonly property color ink: darkMode ? "#eef0e9" : "#2c302a"
-    readonly property color muted: darkMode ? "#b7bdaf" : "#62695e"
-    readonly property color paperColor: darkMode ? "#1e231c" : "#fbfcf8"
-    readonly property color inputColor: darkMode ? "#252b22" : "#ffffff"
-    readonly property color backingColor: darkMode ? "#3a4332" : "#e8ece1"
-    readonly property color edge: darkMode ? "#3b4635" : "#d8e0cf"
-    readonly property color accent: darkMode ? "#b8cfa0" : "#3f5a32"
-    readonly property color accentText: darkMode ? "#24301b" : "#fafcf5"
-    readonly property color selectedSurface: darkMode ? "#2d3727" : "#edf4e8"
-    readonly property color selectedEdge: darkMode ? "#46593d" : "#b5ceaa"
-    readonly property color utilitySurface: darkMode ? "#283024" : "#f2f5ee"
-    readonly property color hoverSurface: darkMode ? "#303a2b" : "#e9efe2"
-    readonly property color pdfInk: darkMode ? "#dbaa9f" : "#a15e50"
+    property DeskTheme deskTheme: DeskTheme { darkMode: desk.darkMode }
+    readonly property color ink: deskTheme.ink
+    readonly property color muted: deskTheme.muted
+    readonly property color paperColor: deskTheme.paperColor
+    readonly property color inputColor: deskTheme.inputColor
+    readonly property color backingColor: deskTheme.backingColor
+    readonly property color edge: deskTheme.edge
+    readonly property color accent: deskTheme.accent
+    readonly property color accentText: deskTheme.accentText
+    readonly property color selectedSurface: deskTheme.selectedSurface
+    readonly property color selectedEdge: deskTheme.selectedEdge
+    readonly property color utilitySurface: deskTheme.utilitySurface
+    readonly property color hoverSurface: deskTheme.hoverSurface
+    readonly property color pdfInk: deskTheme.pdfInk
     readonly property int cardRadius: 10
     readonly property int controlRadius: 10
     readonly property bool failed: liveSnapshot.phase === "error" || liveSnapshot.phase === "cancelled"
@@ -97,7 +98,20 @@ Rectangle {
     signal moveRequested()
     signal hideRequested()
 
+    // Every tooltip in this window is one shared popup; dress it in the desk palette once.
+    function styleToolTips() {
+        var tip = desk.ToolTip.toolTip
+        tip.palette.toolTipBase = Qt.binding(function() { return desk.ink })
+        tip.palette.toolTipText = Qt.binding(function() { return desk.paperColor })
+        tip.font.pixelSize = 12
+        tip.padding = 7
+        if (tip.background) {
+            tip.background.radius = 7
+            tip.background.border.width = 0
+        }
+    }
     Component.onCompleted: {
+        styleToolTips()
         liveSnapshot = liveController.snapshot
         editor.text = liveSnapshot.draftText || ""
     }
@@ -281,7 +295,7 @@ Rectangle {
                 height: parent.height - 50; radius: 10; color: desk.utilitySurface
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 10; spacing: 8
-                    Label { text: "Nguồn đang dùng" + (desk.liveSnapshot.captureSourceApp ? " · " + desk.liveSnapshot.captureSourceApp : ""); textFormat: Text.PlainText; Layout.fillWidth: true; wrapMode: Text.Wrap; color: desk.muted; font.pixelSize: 11 }
+                    Label { text: "Nguồn đang dùng" + (desk.liveSnapshot.captureSourceApp ? " · " + desk.liveSnapshot.captureSourceApp : ""); textFormat: Text.PlainText; Layout.fillWidth: true; wrapMode: Text.Wrap; color: desk.muted; font.pixelSize: 12 }
                     Image {
                         visible: Boolean(desk.liveSnapshot.imagePreviewUrl)
                         source: desk.liveSnapshot.imagePreviewUrl || ""; fillMode: Image.PreserveAspectFit
@@ -558,7 +572,7 @@ Rectangle {
                                 background: Rectangle { color: desk.utilitySurface; radius: 8 }
                                 Accessible.name: "Đoạn gốc"
                             }
-                            Label { visible: !desk.simpleAnswer && Boolean(desk.liveSnapshot.meta); text: desk.liveSnapshot.meta || ""; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 11; Layout.fillWidth: true; elide: Text.ElideRight }
+                            Label { visible: !desk.simpleAnswer && Boolean(desk.liveSnapshot.meta); text: desk.liveSnapshot.meta || ""; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 12; Layout.fillWidth: true; elide: Text.ElideRight }
                             Label { visible: !desk.simpleAnswer && Boolean(desk.liveSnapshot.translationNotice); text: desk.liveSnapshot.translationNotice || ""; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap }
                             QuietButton { visible: !desk.compact; text: desk.showTranslationDetails ? "Ẩn chi tiết" : "Chi tiết"; onClicked: desk.showTranslationDetails = !desk.showTranslationDetails }
                             Label { visible: !desk.compact && desk.showTranslationDetails; text: desk.liveSnapshot.translationDetails || ""; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap }
@@ -630,8 +644,8 @@ Rectangle {
                                                 Layout.fillWidth: true
                                                 spacing: 2
                                                 Label { text: modelData.title; textFormat: Text.PlainText; color: desk.ink; font.weight: Font.Medium; font.pixelSize: 13; elide: Text.ElideRight; Layout.fillWidth: true }
-                                                Label { text: modelData.folder || modelData.display_path || modelData.path; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 11; elide: Text.ElideMiddle; Layout.fillWidth: true }
-                                                Label { visible: Boolean(modelData.snippet); text: "“" + (modelData.snippet || "").slice(0, 140) + "…”"; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 11; font.italic: true; elide: Text.ElideRight; maximumLineCount: 1; Layout.fillWidth: true }
+                                                Label { text: modelData.folder || modelData.display_path || modelData.path; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 12; elide: Text.ElideMiddle; Layout.fillWidth: true }
+                                                Label { visible: Boolean(modelData.snippet); text: "“" + (modelData.snippet || "").slice(0, 140) + "…”"; textFormat: Text.PlainText; color: desk.muted; font.pixelSize: 12; font.italic: true; elide: Text.ElideRight; maximumLineCount: 1; Layout.fillWidth: true }
                                             }
                                         }
                                         Accessible.role: Accessible.ListItem; Accessible.name: modelData.title + ", " + modelData.path
@@ -765,7 +779,7 @@ Rectangle {
                             radius: 5; color: desk.utilitySurface; border.width: 1; border.color: desk.edge
                             implicitWidth: shortcutCap.implicitWidth + 10; implicitHeight: 20
                             Layout.alignment: Qt.AlignVCenter
-                            Label { id: shortcutCap; anchors.centerIn: parent; text: desk.liveSnapshot.shortcutLabel || ""; color: desk.muted; font.pixelSize: 11 }
+                            Label { id: shortcutCap; anchors.centerIn: parent; text: desk.liveSnapshot.shortcutLabel || ""; color: desk.muted; font.pixelSize: 12 }
                         }
                         QuietButton { id: sendControl; visible: Boolean(editor.text.trim() || desk.liveSnapshot.attachmentLabel); KeyNavigation.tab: moreControl; KeyNavigation.backtab: editor; objectName: "sendButton"; primary: true; iconName: "arrow-up"; implicitWidth: 28; implicitHeight: 28; enabled: !desk.liveSnapshot.busy && Boolean(editor.text.trim() || desk.liveSnapshot.attachmentLabel); Accessible.name: "Gửi yêu cầu"; onClicked: desk.liveController.submitDraft() }
                         QuietButton { id: moreControl; KeyNavigation.tab: closeControl; KeyNavigation.backtab: sendControl.visible ? sendControl : editor; visible: true; text: "⋯"; implicitWidth: 20; Accessible.name: "Thao tác khác"; onClicked: desk.openMoreMenu() }
@@ -775,7 +789,7 @@ Rectangle {
                 Label {
                     visible: !desk.paperVisible && !desk.liveSnapshot.busy && !editor.text.length
                     text: desk.liveSnapshot.indexProgress || ("Đang đọc paper? Bôi đen một đoạn rồi bấm " + (desk.liveSnapshot.shortcutLabel || "phím tắt") + " để dịch.")
-                    color: desk.muted; font.pixelSize: 11; wrapMode: Text.Wrap; Layout.fillWidth: true; leftPadding: 4
+                    color: desk.muted; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true; leftPadding: 4
                 }
             }
         }

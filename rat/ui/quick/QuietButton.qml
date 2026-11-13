@@ -8,6 +8,8 @@ Button {
     property bool elideText: false
     property bool subtle: false
     property bool plain: false
+    // How far the face sinks while pressed. Read by tests/test_quick_press_depth.py.
+    readonly property int pressDepth: (down && !desk.reduceMotion) ? ((iconOnly || plain) ? 1 : 2) : 0
     readonly property bool iconOnly: subtle || (Boolean(iconName) && !Boolean(text)) || text === "⋯"
     opacity: enabled ? 1 : 0.45
     hoverEnabled: true
@@ -23,6 +25,7 @@ Button {
     property int trailingIconSize: 13
     property color iconColor: "transparent"
     contentItem: RowLayout {
+        transform: Translate { y: control.pressDepth; Behavior on y { NumberAnimation { duration: 70 } } }
         property color color: control.primary
             ? desk.accentText
             : control.plain
@@ -65,6 +68,7 @@ Button {
     }
     background: Rectangle {
         visible: !control.plain
+        transform: Translate { y: control.pressDepth; Behavior on y { NumberAnimation { duration: 70 } } }
         radius: control.iconOnly ? 8 : 9
         color: control.primary
             ? (control.down ? Qt.darker(desk.accent, 1.12) : control.hovered ? Qt.darker(desk.accent, 1.05) : desk.accent)
@@ -75,5 +79,6 @@ Button {
             ? desk.accent
             : (control.hovered || control.highlighted ? desk.selectedEdge : desk.edge)
         border.width: control.visualFocus ? 2 : (!control.primary && !control.iconOnly ? 1 : 0)
+        Behavior on color { enabled: !desk.reduceMotion; ColorAnimation { duration: 90 } }
     }
 }

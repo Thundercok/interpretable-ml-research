@@ -51,7 +51,7 @@ ColumnLayout {
                             && (desk.allFinderHits || []).some(function(hit) { return hit.kind !== modelData.kind })
                         text: modelData.kind === "application" ? "Ứng dụng" : "Tài liệu & tệp"
                         color: desk.muted
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         font.weight: Font.DemiBold
                         Layout.topMargin: index === 0 ? 0 : 8
                         Layout.bottomMargin: 2
@@ -169,7 +169,7 @@ ColumnLayout {
                                             text: modelData.kind === "application" ? "Ứng dụng" : (modelData.is_pdf ? "PDF" : "Tệp")
                                             textFormat: Text.PlainText
                                             color: desk.muted
-                                            font.pixelSize: 10
+                                            font.pixelSize: 11
                                             font.weight: Font.Medium
                                         }
                                     }
@@ -180,7 +180,7 @@ ColumnLayout {
                                     text: (modelData.match_reason ? modelData.match_reason + " · " : "") + (modelData.display_path || modelData.path || modelData.snippet || "")
                                     textFormat: Text.PlainText
                                     color: desk.muted
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     elide: Text.ElideMiddle
                                     Layout.fillWidth: true
                                     Layout.minimumWidth: 0
@@ -193,7 +193,7 @@ ColumnLayout {
                                     text: "Trích từ chỉ mục · " + (modelData.snippet || "")
                                     textFormat: Text.PlainText
                                     color: desk.ink
-                                    font.pixelSize: 11
+                                    font.pixelSize: 12
                                     wrapMode: Text.Wrap
                                     maximumLineCount: 2
                                     elide: Text.ElideRight

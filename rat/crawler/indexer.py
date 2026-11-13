@@ -16,6 +16,7 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 import numpy as np
 
 from rat.config import (
+    GENERATED_OUTPUT_DIRS,
     IGNORE_DIRS,
     IGNORE_PATTERNS,
     MAX_FILE_SIZE_BYTES,
@@ -60,6 +61,8 @@ class Indexer:
             if part in IGNORE_DIRS or part.startswith("."):
                 return True
             lower_part = part.lower()
+            if lower_part in GENERATED_OUTPUT_DIRS:
+                return True
             if (
                 lower_part.endswith(".app")
                 or lower_part.endswith(".framework")
@@ -86,6 +89,7 @@ class Indexer:
                 dirs[:] = [
                     d_name for d_name in dirs
                     if d_name not in IGNORE_DIRS and not d_name.startswith(".")
+                    and d_name.lower() not in GENERATED_OUTPUT_DIRS
                 ]
 
                 for file_name in files:

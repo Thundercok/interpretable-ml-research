@@ -57,6 +57,16 @@ def format_file_size(size_bytes: int) -> str:
         return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
 
 
+
+def may_be_course_acronym(keyword: str, plain: str) -> bool:
+    """Whether a query keyword may stand for a course name ("pttkht", "ctdl") in a file path.
+
+    keyword is what the user typed ("tổ"), plain is it without accents, lowercased ("to").
+    A yes here is worth +60, the largest single bonus, so a false yes buries the real file.
+    """
+    # TODO(human): decide which short keywords count as course abbreviations.
+    return 2 <= len(plain) <= 7 and plain.isalpha()
+
 class SearchResultItem:
     """Structured search result with context explanation, VGC verification, and metadata."""
 
@@ -362,7 +372,7 @@ class Reranker:
         matched_acronyms = []
         for kw in context.keywords:
             kw_norm = remove_accents(kw).lower()
-            if 2 <= len(kw_norm) <= 7 and kw_norm.isalpha():
+            if may_be_course_acronym(kw, kw_norm):
                 matched_for_kw = False
                 for part in Path(file_path).parts:
                     part_acr = generate_acronym(part)

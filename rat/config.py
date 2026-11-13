@@ -48,6 +48,13 @@ IGNORE_DIRS = {
     ".config", ".kube", ".terraform"
 }
 
+# Folders of machine-generated output, matched without case. Experiment runs write tens of
+# thousands of small JSON/log files here; indexing one research repo's results/ took 4.5 h
+# and 6 GB, and a running job keeps adding more for the watcher to pick up.
+GENERATED_OUTPUT_DIRS = {
+    "results", "outputs", "runs", "logs", "checkpoints", "wandb", "mlruns", "lightning_logs",
+}
+
 # Ignore file patterns (temporary, system, and sensitive credentials/keys)
 IGNORE_PATTERNS = {
     ".DS_Store", "Thumbs.db", "desktop.ini", "*.tmp", "*.swp", "~$*", "*.pyc",

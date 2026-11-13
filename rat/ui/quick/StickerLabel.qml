@@ -30,7 +30,7 @@ Item {
             text: sticker.text
             textFormat: Text.PlainText
             color: sticker.textColor
-            font.pixelSize: 10
+            font.pixelSize: 11
             font.weight: Font.DemiBold
         }
     }
