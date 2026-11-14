@@ -87,6 +87,14 @@ def _get_curriculum_acronyms() -> Set[str]:
     return _CURRICULUM_ACRONYMS
 
 
+# Query words that name a kind of document, not a subject (accent-free, lower case). A file that
+# matches only these says nothing about the topic the user asked for.
+DOC_TYPE_WORDS = frozenset({
+    "slide", "slides", "lecture", "lectures", "tai lieu", "bai giang", "bai tap", "giao trinh",
+    "lab", "labs", "assignment", "de thi", "mon hoc", "chuong",
+})
+
+
 def may_be_course_acronym(keyword: str, plain: str) -> bool:
     """Whether a query keyword may stand for a course name ("pttkht", "ctdl") in a file path.
 
@@ -386,19 +394,7 @@ class Reranker:
         )
 
         if is_study_intent:
-            # 8a. Study document format bonus (.pdf, .pptx, .docx, .ipynb, etc.)
-            study_exts = {".pdf", ".pptx", ".ppt", ".docx", ".doc", ".ipynb", ".xlsx"}
-            if file_ext in study_exts:
-                add("study_doc", 25.0)
-                reasons.append(f"Tài liệu học tập ({file_ext.upper()})")
-
-            # 8b. Semester directory pattern bonus (e.g. HK241, 2024-2025, Hoc_Ky)
-            sem_match = re.search(r"(?:^|[/\\])(?:hk\d{2,3}|(?:20)?2[3-6][-_](?:20)?2[4-7]|hoc[-_ ]?ky|semester|sem[-_ ]?\d|mon[-_ ]?hoc)(?:[/\\]|$)", path_norm)
-            if sem_match:
-                add("sem_dir", 35.0)
-                reasons.append("Thư mục học kỳ (HK / Niên khóa)")
-
-            # 8c. Course Code or Course Alias in directory path bonus
+            # 8c (computed first). Course Code or Course Alias in directory path bonus
             matched_code = False
             if course_codes and any(code in path_norm for code in course_codes):
                 matched_code = True
@@ -408,13 +404,36 @@ class Reranker:
                 if any(ca in path_compact for ca in clean_aliases):
                     matched_code = True
 
+            # Format, folder and naming bonuses rank documents of the right course against each other.
+            # They must not lift a document that never matched the topic: "slides" alone is a type
+            # word, so an unrelated deck would otherwise collect them and tie with the real one.
+            on_topic = (
+                matched_code
+                or vector_sim > 0.5
+                or any(remove_accents(kw).lower() not in DOC_TYPE_WORDS
+                       for kw in matched_kws_name + matched_kws_content)
+            )
+
+            if on_topic:
+                # 8a. Study document format bonus (.pdf, .pptx, .docx, .ipynb, etc.)
+                study_exts = {".pdf", ".pptx", ".ppt", ".docx", ".doc", ".ipynb", ".xlsx"}
+                if file_ext in study_exts:
+                    add("study_doc", 25.0)
+                    reasons.append(f"Tài liệu học tập ({file_ext.upper()})")
+
+                # 8b. Semester directory pattern bonus (e.g. HK241, 2024-2025, Hoc_Ky)
+                sem_match = re.search(r"(?:^|[/\\])(?:hk\d{2,3}|(?:20)?2[3-6][-_](?:20)?2[4-7]|hoc[-_ ]?ky|semester|sem[-_ ]?\d|mon[-_ ]?hoc)(?:[/\\]|$)", path_norm)
+                if sem_match:
+                    add("sem_dir", 35.0)
+                    reasons.append("Thư mục học kỳ (HK / Niên khóa)")
+
             if matched_code:
                 add("course_code_dir", 30.0)
                 reasons.append("Thư mục đúng mã học phần / Tên môn tương đương")
 
             # 8d. Slide, lecture, lab, assignment naming bonus
             is_slide_or_lab = bool(re.search(r"(?:^|[\s_\.\-])(?:slide|lecture|chuong|ch\d*|bai[-_ ]?giang|bai[-_ ]?tap|lab\d*|assignment|gk|ck|de[-_ ]?thi)", name_norm))
-            if is_slide_or_lab:
+            if on_topic and is_slide_or_lab:
                 add("slide_lecture", 30.0)
                 reasons.append("Bài giảng / Slide / Lab học phần")
 
@@ -504,8 +523,9 @@ class Reranker:
 
             scored_items.append((score, doc, reasons, snippet))
 
-        # Sort descending by score
-        scored_items.sort(key=lambda x: x[0], reverse=True)
+        # Sort on the unclamped score: the displayed score is capped at 100, and sorting on it
+        # would leave every strong match tied in candidate order.
+        scored_items.sort(key=lambda x: x[1].get("_raw_score", x[0]), reverse=True)
         top_items = scored_items[:top_k]
 
         results = []

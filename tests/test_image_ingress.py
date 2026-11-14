@@ -73,8 +73,16 @@ def test_image_preview_provider(qapp):
     assert size.width() > 0
 
 
+@pytest.mark.unlaunched_surface
 def test_controller_image_drop_handling(tmp_path, monkeypatch, qapp):
-    """The Mini desk owns image drops: it shows a preview and queues an OCR-and-translate job."""
+    """Mini desk image drops: a preview and a queued OCR-and-translate job.
+
+    This covers an UNLAUNCHED surface. Nothing starts rat/ui/mini_quick.py (not the router, not
+    pyproject, not packaging), and the main desk that users get sends every dropped file to
+    openPdfDocument(), which rejects anything that is not a PDF. So this test proves the Mini
+    controller works, not that a user can drop an image today. Wiring image drops into the main
+    desk is open work; when it lands, add a test against QuickPDFController and retire this marker.
+    """
     controller = MiniQuickController()
     assert not controller.snapshot["dropActive"]
 

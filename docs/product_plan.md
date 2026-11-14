@@ -45,10 +45,11 @@ Trạng thái lấy từ code ngày 10/11/2026. "Có trong code" chưa có nghĩ
 | Thời khóa biểu, xếp lịch nhóm, tìm phòng TDTU | Có trong code |
 | Tác tử gọi 39 tool (mở tệp, mở app, ghi chú, xếp lịch...) | Có trong code |
 | Chặn hành động do nội dung tệp tự yêu cầu (`untrusted_gate`) | Đã nối lại, có test tự động |
-| Kéo thả tài liệu | Có `DropArea` trong `PDFDesk.qml`, chưa kiểm tra |
+| Kéo thả PDF | Có `DropArea` trong `PDFDesk.qml`, chưa kiểm tra |
+| Kéo thả ảnh | **Chưa có trên desk chính.** `DropArea` chuyển mọi tệp vào `openPdfDocument()` và từ chối tệp không phải PDF. Luồng ảnh (xem trước, OCR, dịch) chỉ có trong Mini desk (`mini_quick.py`), nơi chưa có đường khởi chạy nào |
 | Cài đặt bằng `.app` / `.dmg` cho người không biết kỹ thuật | Chưa kiểm tra, rủi ro lớn nhất khi phát hành |
 
-**Chất lượng hiện tại:** ngày 14/11/2026 toàn bộ suite chạy xanh trên máy dev: 1343 passed, 1 skipped, 3 xfailed. Các lỗi trước đó là code bị thụt lùi khi gộp từ repo nghiên cứu (đã khôi phục chọn model trợ lý, tìm theo nghĩa, bỏ qua bước duyệt tên tệp khi đã có chỉ mục nghĩa, tìm ứng dụng, định tuyến mục tiêu, kiểm tra tham chiếu lượt trước, chặn câu trả lời sai ngôn ngữ và câu trả lời bị cắt) và một lỗi thật: thả ảnh vào Mini desk luôn báo lỗi vì gắn nhãn nguồn sai. CI đã chuyển sang chạy toàn bộ suite, chưa có kết quả trên CI.
+**Chất lượng hiện tại:** ngày 14/11/2026 toàn bộ suite chạy xanh trên máy dev: 1343 passed, 1 skipped, 3 xfailed. Các lỗi trước đó là code bị thụt lùi khi gộp từ repo nghiên cứu (đã khôi phục chọn model trợ lý, tìm theo nghĩa, bỏ qua bước duyệt tên tệp khi đã có chỉ mục nghĩa, tìm ứng dụng, định tuyến mục tiêu, kiểm tra tham chiếu lượt trước, chặn câu trả lời sai ngôn ngữ và câu trả lời bị cắt) và lỗi xếp hạng: tệp chỉ khớp từ loại tài liệu ("slides") vẫn nhận điểm cộng tài liệu học và ngang điểm với tài liệu đúng môn, vì điểm bị chặn ở 100 rồi mới sắp xếp (nay chỉ cộng khi khớp chủ đề và sắp theo điểm chưa chặn). Thả ảnh vào Mini desk cũng từng luôn báo lỗi do gắn sai nhãn nguồn; đã sửa, nhưng Mini desk chưa được khởi chạy từ đâu nên người dùng chưa gặp lỗi này, và test của nó mang dấu `unlaunched_surface`. CI đã chuyển sang chạy toàn bộ suite, chưa có kết quả trên CI.
 
 ### Cách truyền thông trung thực về năng lực
 
@@ -113,6 +114,6 @@ Nếu tỷ lệ dùng Mac trong khảo sát rất thấp, phải nói rõ quy m�
 
 1. Thực hiện kế hoạch overhaul giao diện (`docs/ui_overhaul_plan.md`).
 2. ~~Đưa toàn bộ test về xanh, cho CI chạy cả suite.~~ Xong trên máy dev; còn xác nhận CI xanh sau khi đẩy lên.
-3. ~~Rà phần code thụt lùi khi gộp repo (so `af166b1` với bản hiện tại).~~ Xong ngày 14/11/2026. Ứng dụng thường trú nay dùng helper native `rat-hotkey` như Mini (không cần quyền Accessibility): `⌥⇧Space` mở desk, `⌥⇧R` đọc vùng chọn; pynput chỉ còn là phương án dự phòng khi thiếu helper. Phát hiện kèm theo: file `rat/bin/rat-hotkey` đã cũ hơn `BUILD` trong `mini_version.py`, nên bản trước đó không đăng ký được phím tắt (cả Mini). Đã build lại và thêm test chặn tái diễn; mỗi lần tăng `BUILD` phải chạy `zsh tools/build_rat_mini_hotkey.sh`. Chưa làm: hiện nhãn phím tắt trên desk của ứng dụng thường trú.
+3. ~~Rà phần code thụt lùi khi gộp repo (so `af166b1` với bản hiện tại).~~ Xong ngày 14/11/2026. Ứng dụng thường trú nay dùng helper native `rat-hotkey` như Mini (không cần quyền Accessibility): `⌥⇧Space` mở desk, `⌥⇧R` đọc vùng chọn; pynput chỉ còn là phương án dự phòng khi thiếu helper. Phát hiện kèm theo: file `rat/bin/rat-hotkey` đã cũ hơn `BUILD` trong `mini_version.py`, nên bản trước đó không đăng ký được phím tắt (cả Mini). Đã build lại và thêm test chặn tái diễn; mỗi lần tăng `BUILD` phải chạy `zsh tools/build_rat_mini_hotkey.sh`. Chưa làm: hiện nhãn phím tắt trên desk của ứng dụng thường trú; nối thả ảnh vào desk chính (cần quyết định ảnh được dùng để làm gì: dịch, OCR rồi hỏi, hay mô tả) rồi viết test trên `QuickPDFController`.
 4. Đóng gói `.app`/`.dmg` cài được trên máy sạch.
 5. Dùng thử với người dùng thật, đo ma sát và tỷ lệ quay lại.
