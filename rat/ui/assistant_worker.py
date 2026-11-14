@@ -4,7 +4,7 @@ from __future__ import annotations
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from rat.engine.assistant_runtime import AgentResponse, AssistantRuntime
-from rat.engine.execution import ExecutionRequest
+from rat.engine.execution import ExecutionRequest, validate_referenced_context
 
 
 class ErrorDocumentModel:
@@ -183,7 +183,6 @@ def create_execution_worker(runtime, request: ExecutionRequest, *, reasoning_eng
         from rat.ui.reasoning_worker import OnlineReasoningWorker
         snapshot = request.context_snapshot() if hasattr(request, "context_snapshot") else None
         try:
-            from rat.engine.execution import validate_referenced_context
             validate_referenced_context(snapshot)
         except (TypeError, ValueError, AttributeError):
             return AssistantWorker(runtime, request.query, request=request,
@@ -198,6 +197,10 @@ def create_execution_worker(runtime, request: ExecutionRequest, *, reasoning_eng
         )
         worker.execution_request = request
         return worker
+    try:
+        validate_referenced_context(request.context_snapshot())
+    except ValueError as exc:
+        return AssistantWorker(runtime, request.query, request=request, startup_error=str(exc), parent=parent)
     if request.lane == "document" and not request.document_path:
         return AssistantWorker(runtime, request.query, request=request,
                                startup_error="missing_selected_document", parent=parent)

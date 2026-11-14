@@ -85,7 +85,10 @@ class TestMemorySentinel(unittest.TestCase):
             self.assertEqual(calls, ["memory_pressure_CRITICAL"])
 
         calls.clear()
-        with patch("rat.os.memory_sentinel.get_darwin_memory_pressure_level", return_value=PRESSURE_NORMAL):
+        # Normal pressure must not depend on this machine's live RAM or low-memory notifications.
+        with patch("rat.os.memory_sentinel.get_darwin_memory_pressure_level", return_value=PRESSURE_NORMAL), \
+                patch.object(self.sentinel, "_check_darwin_low_memory", return_value=False), \
+                patch("rat.os.memory_sentinel.psutil", None):
             evicted = self.sentinel.check_memory_pressure_and_evict()
             self.assertFalse(evicted)
             self.assertEqual(len(calls), 0)

@@ -72,6 +72,7 @@ class ResidentApplication(QObject):
     """Unified macOS Resident Background System running the hardware-accelerated QtQuick Desk."""
 
     toggle_spotlight_signal = pyqtSignal()
+    quicklook_signal = pyqtSignal()
     open_finder_signal = pyqtSignal()
     open_settings_signal = pyqtSignal()
     open_schedule_signal = pyqtSignal()
@@ -112,6 +113,7 @@ class ResidentApplication(QObject):
 
         # Cross-thread safe signal dispatching to main event loop
         self.toggle_spotlight_signal.connect(self._do_toggle_spotlight, Qt.ConnectionType.QueuedConnection)
+        self.quicklook_signal.connect(self._do_quicklook_selection, Qt.ConnectionType.QueuedConnection)
         self.open_finder_signal.connect(self._do_open_finder, Qt.ConnectionType.QueuedConnection)
         self.open_settings_signal.connect(self._do_open_settings, Qt.ConnectionType.QueuedConnection)
         self.open_schedule_signal.connect(self._do_open_schedule, Qt.ConnectionType.QueuedConnection)
@@ -449,6 +451,28 @@ class ResidentApplication(QObject):
     def open_natal(self) -> None:
         self.open_natal_signal.emit()
 
+    def trigger_quicklook(self) -> None:
+        """Thread-safe trigger for quickLookSelection."""
+        self.quicklook_signal.emit()
+
+    @pyqtSlot()
+    def _do_quicklook_selection(self) -> None:
+        """Summon the Qt Quick desk and run quickLookSelection on the current selection."""
+        if self.is_quitting:
+            return
+        try:
+            view, controller = self._ensure_desk()
+            if view is None:
+                return
+            view.show()
+            view.raise_()
+            view.requestActivate()
+            activate_macos_app()
+            if controller is not None and hasattr(controller, "quickLookSelection"):
+                controller.quickLookSelection()
+        except Exception as e:
+            logger.error(f"Error triggering quickLookSelection on RAT Desk: {e}", exc_info=True)
+
     @pyqtSlot()
     def _do_open_natal(self) -> None:
         """Open Tarot / Reading view on the unified QtQuick Desk."""
@@ -643,6 +667,8 @@ class ResidentApplication(QObject):
             self.open_widget()
         elif cmd in ("astrology", "natal", "la-so", "reading"):
             self.open_natal()
+        elif cmd in ("quicklook", "selection"):
+            self.trigger_quicklook()
         else:
             self.toggle_spotlight()
 
@@ -655,8 +681,11 @@ class ResidentApplication(QObject):
         self.single_instance_server.command_received.connect(self._on_single_instance_command)
         self.single_instance_server.start()
 
-        # 1. Start Global Hotkey Manager IMMEDIATELY
-        self.hotkey_manager = GlobalHotkeyManager(on_trigger=self.toggle_spotlight)
+        # 1. Start Global Hotkey Manager IMMEDIATELY (native helper, no Accessibility permission)
+        self.hotkey_manager = GlobalHotkeyManager(
+            on_trigger=self.toggle_spotlight,
+            on_quicklook=self.trigger_quicklook,
+        )
         self.hotkey_manager.start()
 
         # 2. Start System Tray (Menu Bar resident item)
@@ -672,12 +701,12 @@ class ResidentApplication(QObject):
         self.tray_manager.tray_icon.show()
 
         from rat.os.hotkey import is_accessibility_trusted
-        if not is_accessibility_trusted():
+        if self.hotkey_manager.needs_accessibility and not is_accessibility_trusted():
             QTimer.singleShot(
                 1200,
                 lambda: self.tray_manager.tray_icon.showMessage(
                     "RAT — Phím tắt toàn cầu (Global Hotkey)",
-                    "Để dùng phím tắt ⌘ ⇧ Space trên mọi app, hãy click icon RAT trên Menu Bar và chọn 'Cấp quyền Phím tắt (Accessibility)'.",
+                    f"Để dùng phím tắt {config.get_hotkey_display()} trên mọi app, hãy click icon RAT trên Menu Bar và chọn 'Cấp quyền Phím tắt (Accessibility)'.",
                     self.tray_manager.tray_icon.MessageIcon.Information,
                     6000,
                 )

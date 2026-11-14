@@ -10,6 +10,7 @@ Registers:
 from __future__ import annotations
 
 import copy
+import logging
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional
@@ -18,6 +19,8 @@ from rat.crawler.db import Database, remove_vietnamese_accents
 from rat.crawler.extractors import extract_document_content
 from rat.kernel.contracts import Artifact, ArtifactAction
 from rat.kernel.registry import Capability, OperationDefinition
+
+logger = logging.getLogger(__name__)
 
 
 def document_read_observation_pack(res: Any) -> Any:
@@ -57,7 +60,7 @@ def document_read_observation_pack(res: Any) -> Any:
     return pack
 
 
-def create_documents_capability(db: Optional[Database] = None) -> Capability:
+def create_documents_capability(db: Optional[Database] = None, semantic=None) -> Capability:
     capability = Capability(
         name="documents",
         title="Tài liệu & Tệp tin",
@@ -71,6 +74,32 @@ def create_documents_capability(db: Optional[Database] = None) -> Capability:
             return context["db"]
         from rat.config import config
         return Database(config.db_path)
+
+    def get_semantic():
+        if semantic is not None:
+            return semantic
+        from rat.config import RAT_DIR
+        from rat.engine.semantic_index import shared_index
+        return shared_index(RAT_DIR / "semantic-index.sqlite")
+
+    def meaning_results(query: str, should_cancel) -> List[Dict[str, Any]]:
+        """Files whose content is about the query. Search still works if this index cannot run."""
+        try:
+            hits = get_semantic().search(query, should_cancel=should_cancel)
+        except Exception as exc:
+            if "cancelled" in str(exc):
+                raise
+            logger.warning("Meaning search unavailable: %s", exc)
+            return []
+        return [{
+            "filename": hit["file_name"],
+            "path": hit["file_path"],
+            "extension": hit["file_ext"],
+            "snippet": hit["chunk_text"][:200],
+            "score": round(hit["similarity_score"], 2),
+            "read": False,
+            "content_status": "search_metadata_only",
+        } for hit in hits]
 
     def handle_search(args: Dict[str, Any], **context) -> List[Dict[str, Any]]:
         query = (args.get("query") or "").strip()
@@ -106,7 +135,14 @@ def create_documents_capability(db: Optional[Database] = None) -> Capability:
 
         results = []
         seen = set()
+        if not filename_query:
+            for hit in meaning_results(query, context.get("should_cancel") or (lambda: False))[:limit]:
+                if Path(hit["path"]).is_file():
+                    seen.add(hit["path"])
+                    results.append(hit)
         for c in candidates:
+            if len(results) >= limit:
+                break
             path = c.get('file_path', '')
             if path in seen or not Path(path).is_file():
                 continue
@@ -139,7 +175,7 @@ def create_documents_capability(db: Optional[Database] = None) -> Capability:
 
         database = get_db(context)
         selected = context.get("selected_document_path")
-        if str(p) != selected and not database.get_document_by_path(str(p)):
+        if str(p) != selected and not database.get_document_by_path(str(p)) and not get_semantic().contains(p):
             return {"found": False, "error": "Tệp chưa có trong chỉ mục RAT", "path": file_path}
 
         try:
@@ -334,13 +370,15 @@ def create_documents_capability(db: Optional[Database] = None) -> Capability:
         observation_formatter=document_read_observation_pack))
 
     capability.register_operation(OperationDefinition("open_document",
-        "Open an exact indexed file in its default application only when the user explicitly requests opening it.",
+        "Open an indexed file in its default application so the user sees it. Call this when the user says open, mở or xem; "
+        "search_documents first if the path is unknown. Never call it otherwise.",
         {"type": "object", "properties": {"file_path": {"type": "string"}}, "required": ["file_path"]}, handle_open))
 
     capability.register_operation(OperationDefinition(
         "deliver_document",
-        "Attach an original indexed file when requested, using its exact observed path (search_documents first if unknown). "
-        "Returns a local reference, metadata and hash; does not open, copy or upload the file.",
+        "Attach an original indexed file to this chat as a reference, only when the user asks to attach or send it, using its exact observed path (search_documents first if unknown). "
+        "This does not open the file: when the user says open or mở, use open_document. "
+        "Returns a local reference, metadata and hash; does not copy or upload the file.",
         {"type": "object", "properties": {"file_path": {"type": "string"}},
          "required": ["file_path"]}, handle_deliver, artifact_kind="document_file"))
 
@@ -368,7 +406,8 @@ def create_documents_capability(db: Optional[Database] = None) -> Capability:
     capability.register_operation(OperationDefinition(
         name="search_documents",
         description=(
-            "Find indexed local files by filename, subject or content keywords; retry irrelevant results. "
+            "Find indexed local files by filename, subject, content keywords or a question about their content; "
+            "retry irrelevant results. "
             "Returns metadata only. Read contents with read_document or read_book_page."
         ),
         parameters={

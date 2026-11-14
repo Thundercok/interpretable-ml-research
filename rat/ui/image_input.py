@@ -140,7 +140,7 @@ def parse_image_url_input(url_or_urls, origin: str = 'dropped') -> tuple[any, st
     else:
         target = url_or_urls
     try:
-        image, name = image_from_url(target, origin='selected_file' if origin != 'dropped' else 'dropped')
+        image, name = image_from_url(target, origin='selected_file' if origin != 'dropped' else 'dropped_file')
         return image, name, None
     except ValueError as exc:
         return None, '', str(exc)

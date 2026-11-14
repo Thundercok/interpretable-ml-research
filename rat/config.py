@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 # Default Paths
 HOME_DIR = Path.home()
@@ -116,7 +116,9 @@ class Config:
         self.auto_watch: bool = True
         self.max_results: int = 15
         self.default_member_name: str = os.getenv("RAT_PROFILE_NAME", "Huy")
-        self.global_hotkey: str = os.getenv("RAT_HOTKEY", "<cmd>+<shift>+<space>")
+        # Names from rat.os.hotkey_chords; the native helper registers them without Accessibility.
+        self.global_hotkey: str = os.getenv("RAT_HOTKEY", "option_shift_space")
+        self.quicklook_hotkey: str = os.getenv("RAT_QUICKLOOK_HOTKEY", "option_shift_r")
         self.first_run_completed: bool = False
         self.launch_at_login: bool = False
         self.memory_sentinel_enabled: bool = True
@@ -131,9 +133,12 @@ class Config:
         if native_preload is not None:
             self.document_model_preload = native_preload.strip().lower() in ("1", "true", "yes")
 
-    def get_hotkey_display(self) -> str:
-        """Return native macOS symbols representation for global_hotkey."""
-        key = self.global_hotkey
+    def get_hotkey_display(self, key: Optional[str] = None) -> str:
+        """Return native macOS symbols for a chord name or pynput string, by default global_hotkey."""
+        key = key or self.global_hotkey
+        from rat.os.hotkey_chords import CHORDS
+        if key in CHORDS:
+            return CHORDS[key][2]
         key = key.replace("<alt>", "⌥").replace("<option>", "⌥")
         key = key.replace("<shift>", "⇧")
         key = key.replace("<cmd>", "⌘").replace("<super>", "⌘")
@@ -175,6 +180,8 @@ class Config:
                         self.default_member_name = data["default_member_name"]
                     if "global_hotkey" in data:
                         self.global_hotkey = data["global_hotkey"]
+                    if isinstance(data.get("quicklook_hotkey"), str):
+                        self.quicklook_hotkey = data["quicklook_hotkey"]
                     if "first_run_completed" in data:
                         self.first_run_completed = data["first_run_completed"]
                     if "launch_at_login" in data:
@@ -206,6 +213,7 @@ class Config:
             "max_results": self.max_results,
             "default_member_name": self.default_member_name,
             "global_hotkey": self.global_hotkey,
+            "quicklook_hotkey": self.quicklook_hotkey,
             "memory_sentinel_enabled": self.memory_sentinel_enabled,
             "deep_idle_timeout_seconds": self.deep_idle_timeout_seconds,
             "memory_pressure_eviction_enabled": self.memory_pressure_eviction_enabled,

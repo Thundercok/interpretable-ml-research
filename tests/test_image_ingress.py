@@ -13,7 +13,7 @@ from rat.ui.image_input import (
     parse_pasted_mime_content,
 )
 from rat.ui.image_preview import ImagePreviewProvider
-from rat.ui.quick_pdf_controller import QuickPDFController
+from rat.ui.mini_quick_controller import MiniQuickController
 
 
 @pytest.fixture(scope="session")
@@ -66,7 +66,7 @@ def test_image_preview_provider(qapp):
 
     provider = ImagePreviewProvider()
     url = provider.set_input(inp)
-    assert url.startswith("image://input-preview/img-")
+    assert url.startswith("image://mini-input/img-")
 
     retrieved, size = provider.requestImage(inp.input_id, None)
     assert not retrieved.isNull()
@@ -74,7 +74,8 @@ def test_image_preview_provider(qapp):
 
 
 def test_controller_image_drop_handling(tmp_path, monkeypatch, qapp):
-    controller = QuickPDFController()
+    """The Mini desk owns image drops: it shows a preview and queues an OCR-and-translate job."""
+    controller = MiniQuickController()
     assert not controller.snapshot["dropActive"]
 
     controller.setDropActive(True)
@@ -83,44 +84,22 @@ def test_controller_image_drop_handling(tmp_path, monkeypatch, qapp):
     controller.setDropActive(False)
     assert not controller.snapshot["dropActive"]
 
-    # Test acceptDroppedImageUrl
     img = QImage(30, 30, QImage.Format.Format_RGB32)
     img.fill(0xFFFFFF)
     path = tmp_path / "diagram.png"
     img.save(str(path), "PNG")
 
-    captured_jobs = []
+    queued = []
+    monkeypatch.setattr(controller, "enqueue", lambda kind, payload, *rest: queued.append((kind, payload)))
 
-    def fake_capture_text(mode, image_input=None, **kwargs):
-        captured_jobs.append((mode, image_input))
-        return {"text": "Hello world from image OCR"}
+    assert controller.dropImage([QUrl.fromLocalFile(str(path))]) is True
 
-    monkeypatch.setattr("rat.engine.snippet_translation.capture_text", fake_capture_text)
+    assert len(queued) == 1
+    kind, payload = queued[0]
+    assert kind == "capture_translate"
+    assert payload["mode"] == "image"
+    assert isinstance(payload["image_input"], ImageInput)
+    assert controller.snapshot["imageLabel"]
+    assert controller.snapshot["imagePreviewUrl"].startswith("image://mini-input/")
 
-    # Mock translate
-    translated_texts = []
-    fake_translator = type("FakeTranslator", (), {
-        "translate": lambda self, text, source="auto", target="vi": {
-            "text": "Xin chào thế giới từ ảnh",
-            "source_lang": "en",
-            "engine": "offline",
-        }
-    })()
-    monkeypatch.setattr(controller, "_get_translator", lambda: fake_translator)
-
-    accepted = controller.acceptDroppedImageUrl(str(path))
-    assert accepted
-
-    # Check that worker started
-    import time
-    for _ in range(20):
-        if captured_jobs:
-            break
-        time.sleep(0.05)
-
-    assert len(captured_jobs) == 1
-    mode, img_inp = captured_jobs[0]
-    assert mode == "image"
-    assert isinstance(img_inp, ImageInput)
-
-    controller.close()
+    controller.quit()

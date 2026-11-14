@@ -68,13 +68,16 @@ class SystemTrayManager:
         menu = NativeMenu()
 
         # Check Accessibility permission
-        from rat.os.hotkey import is_accessibility_trusted, open_accessibility_settings
+        from rat.os.hotkey import get_active_hotkey_manager, is_accessibility_trusted, open_accessibility_settings
         action_perm = QAction("⚠️ Cấp quyền Phím tắt (Accessibility)...", menu)
         action_perm.triggered.connect(open_accessibility_settings)
         menu.addAction(action_perm)
         permission_separator = menu.addSeparator()
         def refresh_permission_action():
-            missing = not is_accessibility_trusted()
+            # The native helper registers hotkeys without Accessibility, so the warning would be noise.
+            manager = get_active_hotkey_manager()
+            native_running = bool(manager and manager.backend == "native" and manager._running)
+            missing = not native_running and not is_accessibility_trusted()
             action_perm.setVisible(missing)
             permission_separator.setVisible(missing)
         menu.aboutToShow.connect(refresh_permission_action)

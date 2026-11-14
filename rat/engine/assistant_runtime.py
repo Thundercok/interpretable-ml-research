@@ -301,8 +301,8 @@ class AssistantRuntime:
         try:
             client = self.model_client
             if client is None:
-                from rat.engine.slm import slm_engine
-                client = slm_engine
+                from rat.engine.slm import assistant_engine
+                client = assistant_engine()
             messages = self._native_messages(goal, trajectory, **context)
             tool_defs = self.registry.to_tool_definitions()
             snapshot = context.get('context_snapshot')
@@ -757,7 +757,27 @@ class AssistantRuntime:
                     pending_calls.clear()
                     emit(on_progress, "Đang hoàn tất phần việc còn thiếu…")
                     continue
-                return response(answer=decision.final_answer)
+
+                final_ans = decision.final_answer
+                from rat.engine.language_check import is_mainly_cjk, is_vietnamese, reads_as_english
+                english = bool(final_ans) and reads_as_english(final_ans)
+                if final_ans and is_vietnamese(goal) and (is_mainly_cjk(final_ans) or english):
+                    retry_context = dict(context)
+                    retry_context["finish_only"] = True
+                    retry_inst = "Câu trả lời trước không viết bằng tiếng Việt. Hãy viết lại toàn bộ bằng tiếng Việt, chỉ dùng thông tin đã có."
+                    retry_decision = self._call_model(
+                        f"{goal}\n\n[Yêu cầu bắt buộc: {retry_inst}]",
+                        trajectory,
+                        **retry_context,
+                    )
+                    if retry_decision.final_answer and not is_mainly_cjk(retry_decision.final_answer):
+                        final_ans = retry_decision.final_answer
+                    elif not english:
+                        step.thought = "Mô hình không trả lời bằng tiếng Việt như yêu cầu sau khi thử lại."
+                        step.error = "language_mismatch"
+                        return response(error="language_mismatch")
+
+                return response(answer=final_ans)
             if finish_only:
                 step.error = "controller_finish_refused"
                 trajectory.append(step)

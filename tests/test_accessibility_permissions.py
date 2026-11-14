@@ -77,7 +77,7 @@ def test_open_accessibility_settings_resets_stale_when_untrusted(api, monkeypatc
 @pytest.fixture
 def hotkeys(monkeypatch):
     from rat.os import hotkey
-    manager = hotkey.GlobalHotkeyManager()
+    manager = hotkey.GlobalHotkeyManager(backend='pynput')
     manager._start_permission_monitor = Mock()
     factory = Mock()
     factory.return_value.start = Mock()
@@ -130,7 +130,7 @@ def test_revoked_permission_stops_previous_listener(hotkeys, monkeypatch):
 
 def test_new_monitor_does_not_reuse_stopped_event(monkeypatch):
     from rat.os import hotkey
-    manager = hotkey.GlobalHotkeyManager()
+    manager = hotkey.GlobalHotkeyManager(backend='pynput')
     old_event = manager._stop_monitor_event
     old_event.set()
     manager._monitor_thread = Mock(is_alive=lambda: True)
