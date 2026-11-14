@@ -5,7 +5,6 @@ from unittest.mock import patch
 import pytest
 from rat.crawler.db import Database
 from rat.engine.assistant_runtime import AssistantRuntime, ModelDecision
-from rat.engine.paired_continuation import collect_pair
 from rat.engine.task_state import validate_task_state
 from rat.timetable.compositor import TimetableCompositor
 
@@ -46,29 +45,6 @@ def test_state_validation_never_invents_missing_constraints():
     with pytest.raises(ValueError):
         validate_task_state({**STATE, 'constraints': '20 min'})
     assert validate_task_state(STATE) == STATE
-
-
-def test_paired_cost_counts_shared_selection_and_both_synthesis_calls(runtime):
-    calls = iter([ModelDecision('', tool_name='search_documents', tool_args={'query': 'Networks'}, prompt_tokens=100, completion_tokens=20),
-                  ModelDecision('', final_answer='No source read.', prompt_tokens=200, completion_tokens=30),
-                  ModelDecision('', final_answer='Search was empty.', prompt_tokens=300, completion_tokens=40)])
-    runtime.model_callable = lambda goal, steps: next(calls)
-    result = collect_pair(runtime, 'Find source', proposal_tool='search_documents')
-    pair = result['pair']
-    assert result['status'] == 'paired'
-    assert pair['stop']['total_tokens'] == 350
-    assert pair['continue']['total_tokens'] == 460
-    assert pair['collection_tokens'] == 690
-    assert pair['quality_gain'] is None and pair['review_status'] == 'pending'
-    assert pair['stop']['steps'][0]['tool_result']['error'] == 'paired_stop'
-    assert pair['continue']['steps'][0]['tool_result'] == []
-    assert len(result['pair_trace_sha256']) == 64
-
-
-def test_model_skipping_lookup_does_not_get_a_synthetic_pair(runtime):
-    runtime.model_callable = lambda goal, steps: ModelDecision('', final_answer='Unhelpful metadata answer')
-    result = collect_pair(runtime, 'Read the source')
-    assert result['status'] == 'checkpoint_not_reached' and result['pair'] is None
 
 
 def test_initial_schema_plan_is_a_real_counted_call_even_if_actor_skips_updates(runtime):

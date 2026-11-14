@@ -58,16 +58,6 @@ class ToolGoalRouter:
                 r'(?:tìm|dịch|sắp xếp|dọn|xem trước|lập|kiểm tra|so sánh|tóm tắt|'
                 r'find|translate|organize|organise|preview|check|compare|summarize)\b', text, re.I):
             return GoalRoute('agent', rule='multi_step_goal')
-        organizing = re.match(r'^(?:(?:hãy|giúp tôi|giúp mình|please)\s+)?(?:dọn|sắp xếp|organize|organise)\b', text, re.I)
-        if 'plan_folder_organization' in self.operations and (organizing or (pending and pending.supplied_inputs.get('operation') == 'plan_folder_organization')):
-            rule = ('month' if re.search(r'tháng|thời gian|month|date', text, re.I) else 'type')
-            if pending and not organizing:
-                rule = pending.supplied_inputs.get('args', {}).get('rule', rule)
-            candidates = [p for p in self.roots if Path(p).name.casefold() in text.casefold() or p in text]
-            if len(candidates) != 1:
-                return self.ask('Bạn muốn sắp xếp thư mục nào? Gửi tên thư mục trong Cài đặt, hoặc dùng ⋯ → Sắp xếp thư mục…',
-                    supplied={'operation':'plan_folder_organization','args':{'rule':rule}}, field_name='folder', rule='organization_folder')
-            return self.direct('plan_folder_organization', {'folder':candidates[0], 'rule':rule}, 'organization_preview')
         translation = TRANSLATE.match(text)
         finding = FIND.match(text)
         # An explicit new instruction supersedes a clarification, except a short

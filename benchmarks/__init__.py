@@ -1,1 +1,0 @@
-"""Research benchmarks for CHUOT."""

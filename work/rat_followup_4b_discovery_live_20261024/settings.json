@@ -1,6 +1,0 @@
-{
-  "model": "qwen3:4b-instruct",
-  "discover_tools": true,
-  "scope": "diagnostic override only; app defaults unchanged",
-  "model_request_cap": 2
-}

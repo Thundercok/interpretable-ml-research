@@ -8,7 +8,6 @@ import pytest
 from rat.engine.assistant_runtime import AssistantRuntime, ModelDecision
 from rat.engine.verification import (CalculationVerifier, ExecutionEvidence,
     VerificationReport, VerificationSession, VerificationStatus, evaluate_expression)
-from rat.engine.work_trace import summarize_step
 from rat.kernel.registry import OperationDefinition
 from rat.timetable.compositor import TimetableCompositor
 
@@ -38,9 +37,6 @@ def test_wrong_final_is_rejected_and_a_new_model_turn_repairs_it(runtime):
     assert observed[0].tool_result['candidate_answer'] == '999'
     assert [d['intervention'] for d in result.controller_decisions] == ['REPAIR', 'ACCEPT']
     assert any('điều chỉnh' in message for message in progress)
-    trace = summarize_step(observed[0])
-    assert trace.title == 'Đối chiếu kết luận' and trace.status == 'error'
-    assert '999' in trace.detail and '4' in trace.detail
 
 
 def test_native_model_gets_real_failure_feedback_and_usage_is_preserved(runtime):

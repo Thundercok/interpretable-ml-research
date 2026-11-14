@@ -1,10 +1,6 @@
 # GitHub Linguist Overrides
-# Exclude legacy research extractions, book archives, and temporary artifacts from language stats
+# Exclude bundled binaries and build output from language stats
 
-work/** linguist-vendored
-work/** linguist-documentation
-_archive_book/** linguist-vendored
-_archive_book/** linguist-documentation
 dist/** linguist-vendored
 rat/bin/** linguist-vendored
 *.pdf linguist-documentation

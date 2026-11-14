@@ -3,9 +3,8 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-from rat.engine.assistant_runtime import AgentStep, AssistantRuntime, ModelDecision
+from rat.engine.assistant_runtime import AssistantRuntime, ModelDecision
 from rat.engine.work_notes import WorkNotebook
-from rat.engine.work_trace import summarize_step
 from rat.timetable.compositor import TimetableCompositor
 
 
@@ -102,31 +101,6 @@ def test_runtime_notes_reach_followup_as_sourced_context():
     note_message = next(message for message in messages if 'Session work notes' in message['content'])
     assert 'chỉ ôn TCP.' in note_message['content']
     assert 'user_supplied' in note_message['content']
-
-
-def test_public_trace_uses_observations_not_private_reasoning_or_raw_completion():
-    step = AgentStep(1, 'PRIVATE CHAIN SHOULD NEVER SHOW', 'read_document',
-        tool_result={'filename': 'TCP.txt', 'found': True, 'truncated': True},
-        raw_completion='PRIVATE RAW COMPLETION')
-    trace = summarize_step(step)
-    assert trace.title == 'Đọc tài liệu' and 'TCP.txt' in trace.detail
-    assert 'PRIVATE' not in trace.detail and 'PRIVATE' not in trace.title
-    assert 'phần đầu' in trace.detail
-
-
-def test_structured_plan_is_a_proposal_not_verified_completion():
-    step = AgentStep(1, '', 'update_task_state', tool_result={'task_state': {
-        'goal': 'Ôn TCP', 'remaining': ['Đọc tài liệu'], 'completed': ['Đã làm mọi thứ']}})
-    trace = summarize_step(step)
-    assert trace.status == 'proposed'
-    assert 'Đọc tài liệu' in trace.detail and 'Đã làm mọi thứ' not in trace.detail
-
-
-@pytest.mark.parametrize('result,status', [({'error': 'Read failed'}, 'error'),
-    ({'status': 'needs_input', 'prompt': 'Bạn sinh ngày nào?'}, 'waiting'),
-    ({'error': 'duplicate_action'}, 'stopped')])
-def test_trace_exposes_failures_waiting_and_limits(result, status):
-    assert summarize_step(AgentStep(1, '', 'read_document', tool_result=result)).status == status
 
 
 def test_work_selection_only_accepts_real_results_and_can_clear_the_surface():

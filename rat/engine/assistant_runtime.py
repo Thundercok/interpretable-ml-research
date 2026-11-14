@@ -877,7 +877,7 @@ class AssistantRuntime:
                 op_status = "error"
                 op_committed = False
             elif (self.profile.profile_name == 'mini' and name in
-                  {'find_files', 'translate_text', 'capture_text', 'correct_captured_text', 'plan_folder_organization'}
+                  {'find_files', 'translate_text', 'capture_text', 'correct_captured_text'}
                   and isinstance(result, dict) and result.get('status') in ('complete', 'preview')
                   and art_refs and step.verification
                   and all(report.get('status') == 'PASS' for report in step.verification)):
