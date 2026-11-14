@@ -46,7 +46,7 @@ Button {
         }
     }
     background: Rectangle {
-        radius: 6
+        radius: 8
         color: keycapRoot.down ? desk.backingColor
             : keycapRoot.primary ? desk.selectedSurface
             : keycapRoot.hovered ? desk.hoverSurface : "transparent"

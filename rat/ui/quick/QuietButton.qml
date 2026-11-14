@@ -25,7 +25,7 @@ Button {
     property int trailingIconSize: 13
     property color iconColor: "transparent"
     contentItem: RowLayout {
-        transform: Translate { y: control.pressDepth; Behavior on y { NumberAnimation { duration: 70 } } }
+        transform: Translate { y: control.pressDepth; Behavior on y { enabled: !desk.reduceMotion; NumberAnimation { duration: 70 } } }
         property color color: control.primary
             ? desk.accentText
             : control.plain
@@ -68,7 +68,7 @@ Button {
     }
     background: Rectangle {
         visible: !control.plain
-        transform: Translate { y: control.pressDepth; Behavior on y { NumberAnimation { duration: 70 } } }
+        transform: Translate { y: control.pressDepth; Behavior on y { enabled: !desk.reduceMotion; NumberAnimation { duration: 70 } } }
         radius: control.iconOnly ? 8 : 9
         color: control.primary
             ? (control.down ? Qt.darker(desk.accent, 1.12) : control.hovered ? Qt.darker(desk.accent, 1.05) : desk.accent)

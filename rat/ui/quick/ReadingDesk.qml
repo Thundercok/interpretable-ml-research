@@ -19,7 +19,7 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: 3
             Label { text: "BÀN XEM · 01"; color: reading.host.accent; font.pixelSize: 11; font.letterSpacing: 2 }
-            Label { text: "Đặt bài. Ngắm lá số."; color: reading.host.ink; font.family: "Georgia"; font.pixelSize: 23; wrapMode: Text.Wrap; Layout.fillWidth: true }
+            Label { text: "Đặt bài. Ngắm lá số."; color: reading.host.ink; font.family: "Georgia"; font.pixelSize: 24; wrapMode: Text.Wrap; Layout.fillWidth: true }
         }
         Button {
             objectName: "readingImportProfile"
@@ -143,7 +143,7 @@ ColumnLayout {
             text: reading.allCardsFaceUp ? "Úp toàn bộ bài" : "Lật mở toàn bộ"
             visible: Boolean((reading.session.cards || []).length)
             onClicked: reading.allCardsFaceUp = !reading.allCardsFaceUp
-            background: Rectangle { radius: 6; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.edge }
+            background: Rectangle { radius: 8; color: parent.hovered ? reading.host.selectedSurface : reading.host.utilitySurface; border.color: reading.host.edge }
             contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
         }
         Label { text: (reading.session.cards || []).length + " lá · nhập tay"; color: reading.host.muted; font.pixelSize: 12 }
@@ -204,10 +204,10 @@ ColumnLayout {
                     objectName: "readingCard_" + cardColumn.index
                     width: parent.width
                     height: Math.max(152, width * 1.35)
-                    radius: 10
-                    color: reading.host.darkMode ? "#303329" : "#f9f5eb"
+                    radius: 12
+                    color: reading.host.deskTheme.readingSlotBg
                     readonly property bool isHighlighted: reading.selectedCard === cardColumn.index || reading.hoveredCardIndex === cardColumn.index || (reading.activeCardTagHover.length > 0 && cardColumn.modelData.title.toLowerCase().indexOf(reading.activeCardTagHover.toLowerCase()) !== -1)
-                    border.color: isHighlighted ? reading.host.accent : (reading.selectedCard === cardColumn.index ? reading.host.accent : (reading.host.darkMode ? "#74654a" : "#c9b58c"))
+                    border.color: isHighlighted ? reading.host.accent : (reading.selectedCard === cardColumn.index ? reading.host.accent : reading.host.deskTheme.readingSlotBorder)
                     border.width: isHighlighted ? 2.5 : (reading.selectedCard === cardColumn.index ? 2 : 1)
                     Accessible.name: cardColumn.modelData.title + (cardColumn.modelData.reversed ? ", ngược" : ", xuôi")
                     Accessible.role: Accessible.Button
@@ -253,15 +253,15 @@ ColumnLayout {
                             angle: 180
                         }
                         Rectangle {
-                            anchors.fill: parent; anchors.margins: 6; radius: 6
-                            color: reading.host.darkMode ? "#242720" : "#eee6d4"
-                            border.color: reading.host.darkMode ? "#58624e" : "#c4b595"
+                            anchors.fill: parent; anchors.margins: 6; radius: 8
+                            color: reading.host.deskTheme.readingCardBackBg
+                            border.color: reading.host.deskTheme.readingCardBackBorder
                             border.width: 1
                             Canvas {
                                 anchors.fill: parent
                                 onPaint: {
                                     var ctx = getContext("2d")
-                                    ctx.reset(); ctx.strokeStyle = reading.host.darkMode ? "#6e7960" : "#a89b7b"; ctx.lineWidth = 1
+                                    ctx.reset(); ctx.strokeStyle = reading.host.deskTheme.readingCardBackStroke; ctx.lineWidth = 1
                                     var cx = width / 2, cy = height / 2, r = Math.min(width, height) * 0.35
                                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke()
                                     ctx.beginPath()
@@ -291,12 +291,12 @@ ColumnLayout {
                         anchors.fill: parent
                         visible: cardFlipRot.angle < 90
                         Rectangle {
-                            anchors.fill: parent; anchors.margins: 6; radius: 6; color: "transparent"
-                            border.color: reading.host.darkMode ? "#534b3b" : "#e4d8c0"
+                            anchors.fill: parent; anchors.margins: 6; radius: 8; color: "transparent"
+                            border.color: reading.host.deskTheme.readingCardFrontBorder
                         }
                         Label {
                             anchors.top: parent.top; anchors.topMargin: 12; anchors.horizontalCenter: parent.horizontalCenter
-                            text: cardColumn.modelData.numeral; font.family: "Georgia"; font.pixelSize: 16; color: reading.host.accent
+                            text: cardColumn.modelData.numeral; font.family: "Georgia"; font.pixelSize: 18; color: reading.host.accent
                         }
                         Canvas {
                             anchors.centerIn: parent
@@ -304,7 +304,7 @@ ColumnLayout {
                             rotation: cardColumn.modelData.reversed ? 180 : 0
                             onPaint: {
                                 var ctx = getContext("2d")
-                                ctx.reset(); ctx.strokeStyle = reading.host.darkMode ? "#c7b58e" : "#8a7144"; ctx.lineWidth = 1.4
+                                ctx.reset(); ctx.strokeStyle = reading.host.deskTheme.readingCardFrontStroke; ctx.lineWidth = 1.4
                                 var x = width/2, y = height/2, r = Math.min(width,height)*0.36
                                 ctx.beginPath()
                                 if (cardColumn.modelData.suit === "Pentacles") {
@@ -511,9 +511,9 @@ ColumnLayout {
             visible: !reading.isEditingDraft
             Layout.fillWidth: true
             implicitHeight: draftCol.implicitHeight + 20
-            radius: 10
-            color: reading.host.darkMode ? "#292c25" : "#fdfbf7"
-            border.color: reading.host.darkMode ? "#474b3e" : "#dfd7c5"
+            radius: 12
+            color: reading.host.deskTheme.readingDraftBg
+            border.color: reading.host.deskTheme.readingDraftBorder
             ColumnLayout {
                 id: draftCol
                 anchors.fill: parent; anchors.margins: 12; spacing: 8
@@ -563,7 +563,7 @@ ColumnLayout {
                         reading.isEditingDraft = false
                     }
                     background: Rectangle { radius: 8; color: reading.host.accent }
-                    contentItem: Text { text: parent.text; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.Medium; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                    contentItem: Text { text: parent.text; color: reading.host.deskTheme.pureWhite; font.pixelSize: 12; font.weight: Font.Medium; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                 }
                 Button {
                     text: "Hủy"
@@ -602,8 +602,8 @@ ColumnLayout {
                     }
                     Rectangle {
                         radius: 4
-                        color: reading.host.darkMode ? "#343c2c" : "#e8efe1"
-                        border.color: reading.host.darkMode ? "#516244" : "#b8cca6"
+                        color: reading.host.deskTheme.readingBadgeBg
+                        border.color: reading.host.deskTheme.readingBadgeBorder
                         implicitWidth: revLabel.implicitWidth + 12
                         implicitHeight: 18
                         Label {
@@ -633,7 +633,7 @@ ColumnLayout {
                     objectName: "readingNoteTitle"
                     text: (reading.session.activeNote || {}).title || "Ghi chú thông minh"
                     font.family: "Georgia"
-                    font.pixelSize: 17
+                    font.pixelSize: 18
                     color: reading.host.ink
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
@@ -665,7 +665,7 @@ ColumnLayout {
                     required property int index
                     Layout.fillWidth: true
                     implicitHeight: factRow.implicitHeight + 10
-                    radius: 6
+                    radius: 8
                     color: reading.host.utilitySurface
                     border.color: reading.host.edge
                     RowLayout {
@@ -716,9 +716,9 @@ ColumnLayout {
                     objectName: "readingActionItem_" + index
                     Layout.fillWidth: true
                     implicitHeight: actionInner.implicitHeight + 12
-                    radius: 6
-                    color: modelData.done ? (reading.host.darkMode ? "#23261f" : "#f4f6f0") : reading.host.paperColor
-                    border.color: modelData.done ? reading.host.edge : (reading.host.darkMode ? "#555b4a" : "#c6cfbc")
+                    radius: 8
+                    color: modelData.done ? reading.host.deskTheme.readingDoneBg : reading.host.paperColor
+                    border.color: modelData.done ? reading.host.edge : reading.host.deskTheme.readingDoneBorder
 
                     RowLayout {
                         id: actionInner
@@ -740,7 +740,7 @@ ColumnLayout {
                                 text: "✓"
                                 font.pixelSize: 12
                                 font.bold: true
-                                color: "#ffffff"
+                                color: reading.host.deskTheme.pureWhite
                                 visible: Boolean(modelData.done)
                             }
 
@@ -775,7 +775,7 @@ ColumnLayout {
                                 text: (modelData.priority || "").toUpperCase()
                                 font.pixelSize: 11
                                 font.weight: Font.DemiBold
-                                color: modelData.priority === "high" ? "#c0392b" : reading.host.muted
+                                color: modelData.priority === "high" ? reading.host.deskTheme.priorityHighInk : reading.host.muted
                             }
                         }
                     }
@@ -826,7 +826,7 @@ ColumnLayout {
                             Rectangle {
                                 visible: (modelData.badges || []).indexOf("expanded") !== -1
                                 radius: 3
-                                color: reading.host.darkMode ? "#343c2c" : "#e8efe1"
+                                color: reading.host.deskTheme.readingBadgeBg
                                 implicitWidth: expBadge.implicitWidth + 8
                                 implicitHeight: 16
                                 Label {
@@ -845,7 +845,7 @@ ColumnLayout {
                                     var heading = modelData.heading || ""
                                     reading.host.liveController.expandNoteSection(noteId, heading, "Nghiên cứu sâu về " + heading, "Phân tích bổ sung về " + heading + ": Phân tích chi tiết khía cạnh thực tế.")
                                 }
-                                background: Rectangle { radius: 6; color: parent.hovered ? reading.host.selectedSurface : reading.host.paperColor; border.color: reading.host.edge }
+                                background: Rectangle { radius: 8; color: parent.hovered ? reading.host.selectedSurface : reading.host.paperColor; border.color: reading.host.edge }
                                 contentItem: Text { text: parent.text; color: reading.host.accent; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                             }
                         }

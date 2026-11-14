@@ -144,6 +144,7 @@ def create_quick_desk(
         "reduceMotion": reduced_motion,
         "maxPaperHeight": max(220, min(460, available.height() - 280)),
         "mascotSource": QUrl.fromLocalFile(str(project / "rat/assets/rat_mascot_cutout.png")),
+        "quitOnClose": quit_on_close,
     })
     view.setSource(QUrl.fromLocalFile(str(Path(__file__).parent / "quick/PDFDesk.qml")))
     if view.status() != QQuickView.Status.Ready:

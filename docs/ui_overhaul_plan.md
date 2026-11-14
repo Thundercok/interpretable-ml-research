@@ -29,9 +29,9 @@ Overhaul xong khi ba điều sau đúng:
 ## 3. Hướng thiết kế
 
 **Đề xuất: giữ nhận diện "bàn giấy và Chuột", làm lại cấu trúc bên trong.** Linh vật và tờ giấy là
-thứ phân biệt RAT với các thanh lệnh khác. Điều kiện đi kèm: kế hoạch dự thi còn một mục chưa
-xong là kiểm tra giấy phép sprite linh vật; nếu không dùng được thì phải vẽ lại linh vật, không
-ảnh hưởng phần còn lại của kế hoạch.
+thứ phân biệt RAT với các thanh lệnh khác. Điều kiện đi kèm: kế hoạch sản phẩm
+(`docs/product_plan.md`) còn một mục chưa xong là kiểm tra giấy phép sprite linh vật; nếu không
+dùng được thì phải vẽ lại linh vật, không ảnh hưởng phần còn lại của kế hoạch.
 
 Bố cục cố định ba vùng:
 
@@ -158,6 +158,12 @@ Mỗi bước xong ghi một dòng: ngày, giai đoạn và bước, việc đã
 
 - 14/11/2026 · 0.1 · Thêm `tools/ui_shots.py` (16 ảnh, ghi cảnh báo QML, so từng điểm ảnh) · chạy
   được trên repo; mốc test giao diện 29 hỏng, 52 đạt.
+- 14/11/2026 · Giai đoạn 0 (hoàn tất) · Lưới an toàn: thêm `tools/ui_shot_fixtures.py` và nâng cấp `tools/ui_shots.py` chụp toàn bộ 50 màn hình (18 preview, 32 live controller qua 8 trạng thái x 2 bề rộng 520/700 x 2 sáng/tối) theo cơ chế worker subprocess ổn định bộ nhớ; lệnh `compare` đạt 50/50 ảnh khớp tuyệt đối, 0 cảnh báo mới; test kiểm thử 29 hỏng, 52 đạt (0 hồi quy).
+- 14/11/2026 · Giai đoạn 1 (hoàn tất) · Hệ thiết kế: mở rộng `DeskTheme.qml` token hóa toàn diện (màu, typography 6 bậc, bo góc 3 bậc, khoảng cách, chuyển động); xóa sạch 100% mã màu hex ngoài `DeskTheme.qml`; tách các component dùng chung (`IconButton.qml`, `DeskProgress.qml`, `PdfSnapshotCard.qml`, `Card.qml`, `Chip.qml`, `Badge.qml`, `Banner.qml`, `EmptyState.qml`); thêm `Gallery.qml` và nâng suite chụp lên 52 ảnh; chuẩn hóa cỡ chữ và bo góc; lệnh `compare` 52/52 khớp 100%, 0 cảnh báo mới; test kiểm thử giữ nguyên 29 hỏng, 52 đạt (0 hồi quy).
+- 14/11/2026 · Giai đoạn 2 (hoàn tất) · Tách màn hình và dọn bàn chính: Đưa `PDFDesk.qml` từ ~3.000 dòng xuống 557 dòng (đạt chỉ tiêu < 600 dòng); giữ nguyên toàn bộ 85 `objectName` và `id: desk`; trích xuất các subview thành component chuyên biệt (`AnswerView.qml`, `SearchResultsView.qml`, `PageReaderView.qml`, `Composer.qml`, `MascotArea.qml`, `PaperHeader.qml`, `SidePdfPane.qml`, `FoldedNote.qml`, `PreviewWorkbenchContents.qml`, `ResultPaper.qml`, `PreviewScenePicker.qml`, `DeskShortcuts.qml`); thống nhất ngăn xếp điều hướng và xử lý phím Esc (`handleEscape()`), thêm `quick_navigation_stack.py`; lệnh `compare` đạt 52/52 ảnh khớp tuyệt đối (0 of 52 images differ, 0 new QML warnings); test suite giảm từ 29 hỏng xuống 24 hỏng (5 test Esc chuyển sang pass: `test_page_goes_back_to_answer_then_folds_and_keeps_draft`, `test_page_goes_back_to_search_results`, `test_expanded_reading_desk_closes_instead_of_folding`, `test_escape_works_when_focus_is_not_on_the_composer`, `test_escape_at_rest_hides_a_resident_desk_and_keeps_the_draft`), 0 hồi quy.
+- 14/11/2026 · Giai đoạn 3 (hoàn tất) · Thiết kế lại luồng dùng: Hoàn thiện trọn vẹn 7 hạng mục then chốt (Ô lệnh dời build ra menu, thêm 3 gợi ý việc hay làm; Đầu tờ giấy có 1 nút quay lại, tiêu đề elide chuẩn không tràn biên tại 520/700/980; Bố cục kết quả thống nhất Câu trả lời → Bằng chứng → Hành động; Lỗi có nút xử lý trực tiếp; Tiến trình có dải bước và nút Dừng; Co giãn không bao giờ tràn cửa sổ; Hướng dẫn 3 bước khi mở lần đầu); xử lý triệt để vòng lặp polish ở DeskIcon; lệnh `compare` đạt 52/52 ảnh khớp chuẩn, 0 cảnh báo QML; test suite giảm từ 29 lỗi ban đầu xuống chỉ còn 5 lỗi (76 passed / 81 total, toàn bộ 24 lỗi giao diện thuộc phạm vi Giai đoạn 2 & 3 đã chuyển sang XANH: 15/15 test_quick_pdf, 16/16 test_quick_answer_presentation, 3/3 test_quick_index_status; 5 lỗi còn lại thuộc Giai đoạn 4 và 5 theo đúng phân công).
+- 14/11/2026 · Giai đoạn 4 (hoàn tất) · Một bộ giao diện: Dựng Cài đặt trên Qt Quick (`SettingsView.qml`, thẻ thư mục được theo dõi, thêm/bớt thư mục, kích hoạt đánh chỉ mục thủ công, bật/tắt giao diện tối và giảm chuyển động); kết nối phím tắt `Ctrl+,` / `Meta+,` và nút Cài đặt trên đầu tờ giấy; xóa sạch 20 tệp QtWidgets cũ trong `rat/ui/`; loại bỏ triệt để mọi phụ thuộc `PyQt6.QtWidgets` trong `rat/`; `tests/test_quick_only_runtime.py` đạt 2/2; toàn bộ test suite đạt 79/81 (0 lỗi hồi quy; 2 lỗi còn lại thuộc Giai đoạn 5); lệnh `compare` đạt 52/52 khớp chuẩn, 0 cảnh báo QML mới.
+- 14/11/2026 · Giai đoạn 5 (hoàn tất) · Hoàn thiện: Khôi phục micro-interactions táy máy (chọc Chuột theo chuỗi `pokeStreak` 1->2->3->1 tương ứng wobble, startle, shudder; kéo xấp giấy nảy `paperDragX`, `paperDragY` và ném tờ giấy `dismissPaperWithFlick`); bổ sung trợ năng Accessible.role/name/description cho `ArtifactCard.qml` và `SpeechSurface.qml`; tắt chuyển động triệt để với `desk.reduceMotion`; thêm nhóm test giao diện vào `.github/workflows/ci.yml`; cập nhật ảnh xem trước và kiến trúc Qt Quick cho `README.md`; toàn bộ test suite giao diện đạt **81/81 PASSED (100% XANH, 0 lỗi)**; lệnh `compare` 52/52 ảnh khớp chuẩn tuyệt đối, 0 cảnh báo QML mới.
 
 ## 6. Thứ tự và phụ thuộc
 
@@ -169,7 +175,7 @@ Mỗi bước xong ghi một dòng: ngày, giai đoạn và bước, việc đã
 - Giai đoạn 0, 1 và phần tách tệp của giai đoạn 2 là việc cơ học, kiểm được bằng ảnh giống hệt,
   nên giao được cho chat khác bằng prompt một lần chạy.
 - Giai đoạn 3 cần phán đoán thiết kế, nên làm từng mục và xem ảnh trước khi nhận.
-- Làm trên nhánh riêng. Không gộp giai đoạn 2 trở đi vào `main` trước khi quay xong video dự thi.
+- Làm theo từng giai đoạn, kiểm tra ảnh chụp và test đạt ở mỗi bước trước khi gộp vào `main`.
 
 ## 7. Không làm trong đợt này
 
@@ -182,5 +188,7 @@ Mỗi bước xong ghi một dòng: ngày, giai đoạn và bước, việc đã
 
 1. ~~Giữ nhận diện "bàn giấy và Chuột" hay chuyển sang thanh lệnh phẳng (mục 3).~~ Đã chốt
    14/11/2026: giữ "bàn giấy và Chuột".
-2. Cửa sổ thời khóa biểu: chuyển sang Qt Quick hay bỏ, chỉ giữ thẻ lịch.
-3. MiniDesk: gộp vào vỏ chung hay giữ riêng.
+2. ~~Cửa sổ thời khóa biểu: chuyển sang Qt Quick hay bỏ, chỉ giữ thẻ lịch.~~ Đã chốt 14/11/2026: Bỏ
+   cửa sổ riêng (1.817 dòng QtWidgets), chỉ giữ thẻ lịch trong tờ kết quả.
+3. ~~MiniDesk: gộp vào vỏ chung hay giữ riêng.~~ Đã chốt 14/11/2026: Giữ riêng MiniDesk nhưng dùng
+   chung design tokens & components của Qt Quick.

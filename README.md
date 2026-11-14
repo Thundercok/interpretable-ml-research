@@ -63,8 +63,9 @@ RAT Runtime Architecture
 │   └── diagnostics.py    Isolated state verification and telemetry
 │
 ├── rat/ui/               Presentation Layer (PyQt6 & Qt Quick)
-│   ├── quick_app.py      Instant search bar and omnibar overlay
-│   └── views.py          Desk view, PDF inspection, and result displays
+│   ├── quick_app.py      Quick desktop launcher and application entry
+│   ├── quick/            Modular Qt Quick views (Desk, Paper, Mascot, Settings)
+│   └── quick_pdf_controller.py  State management and document controller
 │
 ├── rat/engine/           Intelligence & Reasoning Engine
 │   ├── hybrid_search.py  FTS5 + vector embedding search via RRF
@@ -96,7 +97,7 @@ RAT Runtime Architecture
 ### Prerequisites
 - **macOS** (Optimized for Apple Silicon: M1 / M2 / M3 / M4)
 - **Python 3.11+**
-- Recommended package manager: [`uv`](https://github.com/astral-sh/uv)
+- Package manager: [`uv`](https://github.com/astral-sh/uv) (the lock file is the only dependency source)
 
 ### Installation
 
@@ -105,13 +106,8 @@ RAT Runtime Architecture
 git clone https://github.com/Thundercok/selective-delegation-agent.git
 cd selective-delegation-agent
 
-# Option A: Fast install with uv (recommended)
+# Install the pinned dependencies from uv.lock
 uv sync
-
-# Option B: Standard pip workflow
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ---
@@ -129,9 +125,6 @@ uv run python main.py
 
 # Launch Quick PDF inspection mode
 uv run python main.py quick-pdf
-
-# Launch Widgets Omnibar overlay
-uv run python main.py widgets
 ```
 
 ### CLI Commands
@@ -171,7 +164,7 @@ The test suite covers unit logic, contract schemas, and isolated diagnostic stat
 uv run pytest tests/test_rat_task_memory.py tests/test_code_review_capability.py
 
 # Run verification suite
-uv run pytest tests/test_verifiers.py
+uv run pytest tests/test_rat_verification.py
 ```
 
 ---

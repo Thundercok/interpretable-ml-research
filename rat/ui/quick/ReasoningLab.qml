@@ -17,12 +17,12 @@ Rectangle {
     readonly property color paperColor: deskTheme.paperColor
     readonly property color inputColor: deskTheme.inputColor
     // Here this is the window behind the cards, so in the dark it must stay darker than paperColor.
-    readonly property color backingColor: darkMode ? "#1f241c" : deskTheme.backingColor
+    readonly property color backingColor: deskTheme.labBackingColor
     readonly property color edge: deskTheme.edge
     readonly property color accent: deskTheme.accent
     readonly property color accentText: deskTheme.accentText
     readonly property color warningInk: deskTheme.warningInk
-    readonly property color wrongInk: darkMode ? "#dbaa9f" : "#a15e50"
+    readonly property color wrongInk: deskTheme.wrongInk
     readonly property color selectedSurface: deskTheme.selectedSurface
     readonly property color selectedEdge: deskTheme.selectedEdge
     readonly property color utilitySurface: deskTheme.utilitySurface
@@ -34,43 +34,7 @@ Rectangle {
 
     color: backingColor
 
-    component Card: Rectangle {
-        color: desk.paperColor
-        radius: 12
-        border.width: 1
-        border.color: desk.edge
-    }
 
-    component Chip: Rectangle {
-        id: chip
-        property string label: ""
-        property bool active: false
-        signal clicked()
-        implicitHeight: 30
-        implicitWidth: chipLabel.implicitWidth + 24
-        radius: 15
-        color: active ? desk.selectedSurface : (chipMouse.containsMouse ? desk.hoverSurface : desk.utilitySurface)
-        border.width: 1
-        border.color: active ? desk.selectedEdge : desk.edge
-        opacity: enabled ? 1 : 0.5
-        Accessible.role: Accessible.Button
-        Accessible.name: label
-        Label {
-            id: chipLabel
-            anchors.centerIn: parent
-            text: chip.label
-            font.pixelSize: 12
-            font.weight: chip.active ? Font.DemiBold : Font.Medium
-            color: chip.active ? desk.accent : desk.ink
-        }
-        MouseArea {
-            id: chipMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: chip.clicked()
-        }
-    }
 
     component Metric: ColumnLayout {
         property string value: ""
@@ -123,7 +87,7 @@ Rectangle {
             }
             Label {
                 text: "Đáp án: " + (stepCard.step.answer || "chưa có")
-                font.pixelSize: 15
+                font.pixelSize: 14
                 font.weight: Font.Medium
                 color: desk.ink
                 Layout.fillWidth: true
@@ -273,7 +237,7 @@ Rectangle {
                                 font.weight: Font.DemiBold
                                 horizontalAlignment: Text.AlignHCenter
                             }
-                            background: Rectangle { radius: 9; color: desk.accent; opacity: runButton.hovered ? 0.88 : 1 }
+                            background: Rectangle { radius: 8; color: desk.accent; opacity: runButton.hovered ? 0.88 : 1 }
                             onClicked: desk.snap.busy ? desk.controller.cancel() : desk.controller.submit()
                         }
                     }
@@ -349,7 +313,7 @@ Rectangle {
                                 required property int index
                                 spacing: 6
                                 Rectangle {
-                                    radius: 6
+                                    radius: 8
                                     color: desk.selectedSurface
                                     border.width: 1
                                     border.color: desk.selectedEdge

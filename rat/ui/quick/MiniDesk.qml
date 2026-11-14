@@ -83,8 +83,8 @@ Rectangle {
     readonly property color utilitySurface: deskTheme.utilitySurface
     readonly property color hoverSurface: deskTheme.hoverSurface
     readonly property color pdfInk: deskTheme.pdfInk
-    readonly property int cardRadius: 10
-    readonly property int controlRadius: 10
+    readonly property int cardRadius: deskTheme.radiusLarge
+    readonly property int controlRadius: deskTheme.radiusLarge
     readonly property bool failed: liveSnapshot.phase === "error" || liveSnapshot.phase === "cancelled"
     readonly property bool recoveryVisible: failed || (liveSnapshot.phase === "partial" && (liveSnapshot.view !== "finder" || allFinderHits.length === 0))
     readonly property string recoveryAction: liveSnapshot.imageInputSuggested ? "image" : (liveSnapshot.finderSettingsSuggested || liveSnapshot.translationSettingsSuggested) ? "settings" : liveSnapshot.canRetryRequest ? "retry" : ""
@@ -292,7 +292,7 @@ Rectangle {
                 id: fullSource
                 visible: desk.taskVisible && Boolean(desk.liveSnapshot.sourceVisible) && !desk.auxiliary && parent.width >= 700
                 x: 22; y: 14; width: Math.min(260, parent.width * 0.32)
-                height: parent.height - 50; radius: 10; color: desk.utilitySurface
+                height: parent.height - 50; radius: 12; color: desk.utilitySurface
                 ColumnLayout {
                     anchors.fill: parent; anchors.margins: 10; spacing: 8
                     Label { text: "Nguồn đang dùng" + (desk.liveSnapshot.captureSourceApp ? " · " + desk.liveSnapshot.captureSourceApp : ""); textFormat: Text.PlainText; Layout.fillWidth: true; wrapMode: Text.Wrap; color: desk.muted; font.pixelSize: 12 }
@@ -526,7 +526,7 @@ Rectangle {
                             visible: desk.surface === "ocr"; Layout.fillWidth: true; Layout.minimumHeight: 180
                             text: desk.liveSnapshot.ocrText || ""; textFormat: TextEdit.PlainText
                             readOnly: Boolean(desk.liveSnapshot.busy); selectByMouse: true; wrapMode: TextEdit.Wrap
-                            color: desk.ink; font.pixelSize: 15; padding: 10
+                            color: desk.ink; font.pixelSize: 14; padding: 10
                             background: Rectangle { color: desk.utilitySurface; radius: 8; border.color: ocrEditor.activeFocus ? desk.accent : desk.edge }
                             onTextChanged: { if (activeFocus) desk.liveController.setOcrDraft(text) }
                             Accessible.name: "Chữ trong ảnh, có thể sửa"
@@ -535,7 +535,7 @@ Rectangle {
                             visible: desk.surface === "source"; Layout.fillWidth: true
                             text: desk.liveSnapshot.ocrOriginalText || ""; textFormat: TextEdit.PlainText
                             readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
-                            color: desk.ink; font.pixelSize: 15; padding: 0; background: null
+                            color: desk.ink; font.pixelSize: 14; padding: 0; background: null
                             Accessible.name: "Chữ nhận ban đầu, giữ nguyên"
                         }
                         Label { visible: desk.surface === "ocr" && desk.ocrDirty; text: "Chữ đã sửa chưa được dịch lại. Bản dịch trước vẫn được giữ."; color: desk.muted; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap }
@@ -581,7 +581,7 @@ Rectangle {
                             visible: desk.surface === "result" && desk.liveSnapshot.view === "notice" && Boolean(desk.liveSnapshot.text)
                             text: desk.liveSnapshot.text || ""; textFormat: TextEdit.PlainText
                             readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
-                            color: desk.ink; font.pixelSize: 15; padding: 0; background: null; Layout.fillWidth: true
+                            color: desk.ink; font.pixelSize: 14; padding: 0; background: null; Layout.fillWidth: true
                         }
                         FocusScope {
                             id: fileResults
@@ -776,7 +776,7 @@ Rectangle {
                         }
                         Rectangle {
                             visible: !editor.text.length && !desk.liveSnapshot.busy && Boolean(desk.liveSnapshot.shortcutLabel)
-                            radius: 5; color: desk.utilitySurface; border.width: 1; border.color: desk.edge
+                            radius: 4; color: desk.utilitySurface; border.width: 1; border.color: desk.edge
                             implicitWidth: shortcutCap.implicitWidth + 10; implicitHeight: 20
                             Layout.alignment: Qt.AlignVCenter
                             Label { id: shortcutCap; anchors.centerIn: parent; text: desk.liveSnapshot.shortcutLabel || ""; color: desk.muted; font.pixelSize: 12 }
@@ -863,7 +863,7 @@ Rectangle {
     Menu {
         id: moreMenu
         width: 216
-        background: Rectangle { radius: 10; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
+        background: Rectangle { radius: 12; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
         popupType: Popup.Window
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Dịch Clipboard"; enabled: !desk.liveSnapshot.busy; onTriggered: desk.liveController.translateClipboard() }
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Chọn ảnh để dịch…"; enabled: !desk.liveSnapshot.busy && !desk.auxiliary; onTriggered: imageDialog.open() }
@@ -874,7 +874,7 @@ Rectangle {
     Menu {
         id: readerMenu
         width: 216
-        background: Rectangle { radius: 10; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
+        background: Rectangle { radius: 12; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
         popupType: Popup.Window
         property var sourceEditor: translationArea
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Sao chép phần đã chọn"; enabled: Boolean(readerMenu.sourceEditor.selectedText); onTriggered: desk.liveController.copyLookSelection(readerMenu.sourceEditor.selectedText) }
@@ -883,7 +883,7 @@ Rectangle {
     Menu {
         id: editorMenu
         width: 180
-        background: Rectangle { radius: 10; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
+        background: Rectangle { radius: 12; color: desk.paperColor; border.color: desk.edge; border.width: 1 }
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Dán"; onTriggered: desk.pasteDraft() }
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Sao chép"; enabled: Boolean(editor.selectedText); onTriggered: editor.copy() }
         MenuItem { implicitHeight: 30; topPadding: 5; bottomPadding: 5; font.pixelSize: 12; text: "Cắt"; enabled: Boolean(editor.selectedText); onTriggered: editor.cut() }

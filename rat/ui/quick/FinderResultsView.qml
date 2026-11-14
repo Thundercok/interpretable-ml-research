@@ -123,7 +123,7 @@ ColumnLayout {
                                 Rectangle {
                                     anchors.fill: parent
                                     visible: modelData.kind !== "application"
-                                    radius: 7
+                                    radius: 8
                                     color: hitCard.isSelected ? desk.paperColor : desk.utilitySurface
                                     border.width: 1
                                     border.color: desk.edge

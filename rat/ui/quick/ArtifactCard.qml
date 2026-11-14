@@ -7,6 +7,16 @@ Rectangle {
     property var cardData: ({})
     readonly property string visualType: cardData ? (cardData.visual_type || "") : ""
 
+    Accessible.role: Accessible.Grouping
+    Accessible.name: {
+        if (visualType === "iching") return "Quẻ Kinh Dịch: " + (cardData ? (cardData.hexagram_name || "") : "")
+        if (visualType === "natal") return "Lá số Chiêm tinh: " + (cardData ? (cardData.chart_title || "") : "")
+        if (visualType === "timetable") return "Lịch học và thời khóa biểu"
+        if (visualType === "web_preview") return "Xem trước trang web: " + (cardData ? (cardData.title || "") : "")
+        return "Thẻ thông tin trực quan"
+    }
+    Accessible.description: cardData ? (cardData.summary || cardData.interpretation || cardData.description || "") : ""
+
     visible: visualType !== ""
     implicitHeight: contentCol.implicitHeight + 24
     radius: 12
@@ -29,21 +39,11 @@ Rectangle {
             // Header Tag
             RowLayout {
                 spacing: 8
-                Rectangle {
-                    radius: 5
+                Badge {
+                    text: "🔮 QUẺ KINH DỊCH"
+                    textColor: desk.accent
+                    fontWeight: Font.DemiBold
                     color: Qt.rgba(desk.accent.r, desk.accent.g, desk.accent.b, 0.15)
-                    border.width: 1
-                    border.color: desk.selectedEdge
-                    implicitWidth: ichingTag.implicitWidth + 12
-                    implicitHeight: 22
-                    Label {
-                        id: ichingTag
-                        anchors.centerIn: parent
-                        text: "🔮 QUẺ KINH DỊCH"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: desk.accent
-                    }
                 }
                 Label {
                     text: cardRoot.cardData ? (cardRoot.cardData.question || "") : ""
@@ -117,7 +117,7 @@ Rectangle {
 
                     Label {
                         text: cardRoot.cardData ? (cardRoot.cardData.hexagram_name || "") : ""
-                        font.pixelSize: 16
+                        font.pixelSize: 18
                         font.weight: Font.DemiBold
                         color: desk.ink
                     }
@@ -172,21 +172,11 @@ Rectangle {
             // Header Tag
             RowLayout {
                 spacing: 8
-                Rectangle {
-                    radius: 5
+                Badge {
+                    text: "🃏 BÀI LENORMAND"
+                    textColor: desk.accent
+                    fontWeight: Font.DemiBold
                     color: Qt.rgba(desk.accent.r, desk.accent.g, desk.accent.b, 0.15)
-                    border.width: 1
-                    border.color: desk.selectedEdge
-                    implicitWidth: lenTag.implicitWidth + 12
-                    implicitHeight: 22
-                    Label {
-                        id: lenTag
-                        anchors.centerIn: parent
-                        text: "🃏 BÀI LENORMAND"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: desk.accent
-                    }
                 }
                 Label {
                     text: cardRoot.cardData ? (cardRoot.cardData.question || "Trải bài 3 lá") : ""
@@ -231,7 +221,7 @@ Rectangle {
                             // Card Emoji Icon
                             Label {
                                 text: modelData.icon || "🎴"
-                                font.pixelSize: 26
+                                font.pixelSize: 24
                                 Layout.alignment: Qt.AlignHCenter
                             }
 
@@ -270,21 +260,11 @@ Rectangle {
             // Header Tag
             RowLayout {
                 spacing: 8
-                Rectangle {
-                    radius: 5
+                Badge {
+                    text: "📅 THỜI KHÓA BIỂU"
+                    textColor: desk.accent
+                    fontWeight: Font.DemiBold
                     color: Qt.rgba(desk.accent.r, desk.accent.g, desk.accent.b, 0.15)
-                    border.width: 1
-                    border.color: desk.selectedEdge
-                    implicitWidth: ttTag.implicitWidth + 12
-                    implicitHeight: 22
-                    Label {
-                        id: ttTag
-                        anchors.centerIn: parent
-                        text: "📅 THỜI KHÓA BIỂU"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: desk.accent
-                    }
                 }
                 Label {
                     text: cardRoot.cardData ? (cardRoot.cardData.day || "Hôm nay") : ""
@@ -322,36 +302,17 @@ Rectangle {
                             spacing: 10
 
                             // Time Badge
-                            Rectangle {
-                                radius: 4
+                            Badge {
+                                text: modelData.time || ""
+                                textColor: desk.accentText
+                                fontWeight: Font.DemiBold
                                 color: desk.accent
-                                implicitWidth: timeLbl.implicitWidth + 10
-                                implicitHeight: 22
-                                Label {
-                                    id: timeLbl
-                                    anchors.centerIn: parent
-                                    text: modelData.time || ""
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                    color: desk.accentText
-                                }
                             }
 
                             // Room Badge
-                            Rectangle {
-                                radius: 4
-                                color: desk.selectedSurface
-                                border.width: 1
-                                border.color: desk.selectedEdge
-                                implicitWidth: roomLbl.implicitWidth + 10
-                                implicitHeight: 22
-                                Label {
-                                    id: roomLbl
-                                    anchors.centerIn: parent
-                                    text: modelData.room ? ("Phòng " + modelData.room) : "Chưa rõ phòng"
-                                    font.pixelSize: 11
-                                    color: desk.ink
-                                }
+                            Badge {
+                                text: modelData.room ? ("Phòng " + modelData.room) : "Chưa rõ phòng"
+                                textColor: desk.ink
                             }
 
                             // Course Name & Instructor
@@ -396,21 +357,11 @@ Rectangle {
             // Header Tag
             RowLayout {
                 spacing: 8
-                Rectangle {
-                    radius: 5
+                Badge {
+                    text: "🌐 TRANG WEB"
+                    textColor: desk.accent
+                    fontWeight: Font.DemiBold
                     color: Qt.rgba(desk.accent.r, desk.accent.g, desk.accent.b, 0.15)
-                    border.width: 1
-                    border.color: desk.selectedEdge
-                    implicitWidth: webTag.implicitWidth + 12
-                    implicitHeight: 22
-                    Label {
-                        id: webTag
-                        anchors.centerIn: parent
-                        text: "🌐 TRANG WEB"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: desk.accent
-                    }
                 }
                 Rectangle {
                     visible: Boolean(cardRoot.cardData && cardRoot.cardData.domain)

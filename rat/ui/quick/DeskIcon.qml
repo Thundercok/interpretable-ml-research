@@ -5,12 +5,11 @@ import QtQuick.Window
 Image {
     id: glyph
     property string name: "file"
-    property color color: "#62695e"
+    property color color: (typeof desk !== "undefined" && desk && desk.muted) ? desk.muted : "#62695e"
     width: 16
     height: 16
-    readonly property real dpr: Math.max(2, Math.ceil(Window.window ? Window.window.devicePixelRatio : 2))
-    sourceSize.width: Math.max(16, Math.ceil(width * dpr))
-    sourceSize.height: Math.max(16, Math.ceil(height * dpr))
+    sourceSize.width: 48
+    sourceSize.height: 48
     fillMode: Image.PreserveAspectFit
     smooth: true
     mipmap: true

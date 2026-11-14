@@ -26,3 +26,6 @@ jobs:
 
       - name: Run Core Test Suite
         run: uv run pytest tests/test_rat*.py -v
+
+      - name: Run UI Test Suite
+        run: QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software uv run pytest tests/test_quick_*.py tests/test_paper_and_mascot_interactions.py tests/test_reading_session.py tests/test_app_router.py tests/test_architecture_anti_overengineering.py -v

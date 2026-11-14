@@ -14,9 +14,10 @@ import unicodedata
 
 from rat.engine.book_pages import normalized
 
+from PyQt6.QtCore import QBuffer, QIODevice, QRectF, QSize, Qt
+from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPen
+
 try:
-    from PyQt6.QtCore import QBuffer, QIODevice, QRectF, QSize, Qt
-    from PyQt6.QtGui import QColor, QImage, QPainter, QPen
     from PyQt6.QtPdf import QPdfDocument, QPdfSearchModel
     _QT_PDF_AVAILABLE = True
 except Exception:  # pragma: no cover - graceful fallback when QtPdf is absent
@@ -223,6 +224,25 @@ class PdfSnapshotRenderer:
                         collected.append(QRectF(rect))
         return collected
 
+    def _render_fallback_snapshot(self, text: str, width: int = 1040, height: int = 240) -> str:
+        h = max(60, height)
+        w = max(200, width)
+        img = QImage(w, h, QImage.Format.Format_RGB32)
+        img.fill(QColor("#fdfdf9"))
+        painter = QPainter(img)
+        painter.setPen(QColor("#1c1b18"))
+        font = QFont()
+        font.setPixelSize(18)
+        painter.setFont(font)
+        rect = QRectF(24, 24, w - 48, h - 48)
+        painter.drawText(rect, int(Qt.TextFlag.TextWordWrap), text)
+        painter.end()
+        buf = QBuffer()
+        buf.open(QIODevice.OpenModeFlag.WriteOnly)
+        img.save(buf, "PNG")
+        encoded = base64.b64encode(bytes(buf.data())).decode("ascii")
+        return f"data:image/png;base64,{encoded}"
+
     def render_data_url(
         self,
         path: str | Path,
@@ -232,7 +252,7 @@ class PdfSnapshotRenderer:
         *,
         width: int = 1040,
     ) -> str:
-        if not _QT_PDF_AVAILABLE or not path or type(page) is not int or page < 1:
+        if not path or type(page) is not int or page < 1:
             return ""
         try:
             resolved = Path(path).expanduser().resolve(strict=True)
@@ -250,6 +270,12 @@ class PdfSnapshotRenderer:
         if snap_key in self._snaps:
             self._snaps.move_to_end(snap_key)
             return self._snaps[snap_key]
+
+        if not _QT_PDF_AVAILABLE:
+            txt = (snippet or query or f"Trang {page}").strip()
+            data_url = self._render_fallback_snapshot(txt, width)
+            self._snaps[snap_key] = data_url
+            return data_url
 
         entry = self._get_document(resolved_str, mtime_ns)
         if entry is None:
@@ -346,7 +372,7 @@ class PdfSnapshotRenderer:
         width: int = 1200,
     ) -> str:
         """Render a full crisp PDF page to a base64 PNG data URL, LRU-cached by page."""
-        if not _QT_PDF_AVAILABLE or not path or type(page) is not int or page < 1:
+        if not path or type(page) is not int or page < 1:
             return ""
         try:
             resolved = Path(path).expanduser().resolve(strict=True)
@@ -362,6 +388,11 @@ class PdfSnapshotRenderer:
         if snap_key in self._full_page_snaps:
             self._full_page_snaps.move_to_end(snap_key)
             return self._full_page_snaps[snap_key]
+
+        if not _QT_PDF_AVAILABLE:
+            data_url = self._render_fallback_snapshot(f"Trang {page}", width, int(round(width * 1.414)))
+            self._full_page_snaps[snap_key] = data_url
+            return data_url
 
         entry = self._get_document(resolved_str, mtime_ns)
         if entry is None:

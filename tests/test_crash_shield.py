@@ -1,23 +1,21 @@
 """
 tests/test_crash_shield.py — Enterprise Crash Shield & Lifecycle Hardening Tests.
-Validates sys.excepthook, safe_slot, unparented QThread lifecycle, and graceful window shutdowns.
+Validates sys.excepthook, safe_slot, and the tray rescan worker shutdown.
 """
 
 import os
 import sys
 import threading
-import time
 import unittest
 from unittest.mock import MagicMock, patch
 
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
-from PyQt6.QtCore import QThread
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QGuiApplication
 
-app = QApplication.instance()
+app = QGuiApplication.instance()
 if app is None:
-    app = QApplication(sys.argv)
+    app = QGuiApplication(sys.argv)
 
 from rat.os.crash_shield import (
     CRASH_LOG_FILE,
@@ -26,9 +24,6 @@ from rat.os.crash_shield import (
     safe_slot,
     thread_excepthook,
 )
-from rat.ui.finder_window import FinderWindow
-from rat.ui.settings_dialog import IndexWorker, SettingsDialog
-from rat.ui.spotlight_window import SpotlightWindow
 
 
 class TestCrashShield(unittest.TestCase):
@@ -66,76 +61,6 @@ class TestCrashShield(unittest.TestCase):
         self.assertIn("Diagnostic crash test for CrashShield", content)
         self.assertIn("RuntimeError", content)
 
-    def test_spotlight_window_unparented_thread_shutdown(self):
-        """Verify SpotlightWindow.search_thread is unparented and shuts down cleanly."""
-        with patch("rat.ui.spotlight_window.Database") as mock_db, \
-             patch("rat.ui.spotlight_window.SearchEngine") as mock_engine:
-            mock_db_inst = MagicMock()
-            mock_db_inst.get_stats.return_value = {"total_files": 100}
-            mock_db.return_value = mock_db_inst
-
-            mock_eng_inst = MagicMock()
-            mock_eng_inst.search.return_value = {"results": [], "latency_ms": 0}
-            mock_engine.return_value = mock_eng_inst
-
-            window = SpotlightWindow()
-            # Critical verification: Thread must NOT have QWidget parent
-            self.assertIsNone(window.search_thread.parent())
-
-            # Shutdown must stop thread safely
-            window.shutdown()
-            self.assertIsNone(window.search_thread)
-            window.deleteLater()
-            app.processEvents()
-
-    def test_finder_window_unparented_threads_shutdown(self):
-        """Verify FinderWindow search and QA threads are unparented and shut down cleanly."""
-        with patch("rat.ui.finder_window.Database") as mock_db, \
-             patch("rat.ui.finder_window.SearchEngine") as mock_engine:
-            mock_db_inst = MagicMock()
-            mock_db_inst.get_stats.return_value = {"total_files": 100}
-            mock_db.return_value = mock_db_inst
-
-            mock_eng_inst = MagicMock()
-            mock_eng_inst.search.return_value = {"results": [], "latency_ms": 0}
-            mock_engine.return_value = mock_eng_inst
-
-            window = FinderWindow()
-            # Critical verification: Threads must NOT have QWidget parent
-            self.assertIsNone(window.search_thread.parent())
-            self.assertIsNone(window.qa_thread.parent())
-
-            # Shutdown must terminate both threads safely
-            window.shutdown()
-            self.assertIsNone(window.search_thread)
-            self.assertIsNone(window.qa_thread)
-            window.deleteLater()
-            app.processEvents()
-
-    def test_settings_dialog_worker_shutdown(self):
-        """Verify SettingsDialog safely manages IndexWorker thread lifecycle."""
-        with patch("rat.ui.settings_dialog.Database") as mock_db, \
-             patch("rat.ui.settings_dialog.Indexer"):
-            mock_db_inst = MagicMock()
-            mock_db_inst.get_stats.return_value = {"total_files": 50, "total_size_bytes": 1024 * 1024}
-            mock_db.return_value = mock_db_inst
-
-            dlg = SettingsDialog()
-            # Calling _shutdown_worker when worker is None shouldn't crash
-            dlg._shutdown_worker()
-            self.assertIsNone(getattr(dlg, "worker", None))
-
-            # Simulate an instantiated IndexWorker
-            mock_indexer = MagicMock()
-            worker = IndexWorker(mock_indexer)
-            self.assertIsNone(worker.parent())
-            dlg.worker = worker
-            dlg._shutdown_worker()
-            self.assertIsNone(dlg.worker)
-
-            dlg.deleteLater()
-            app.processEvents()
-
     def test_system_tray_manager_shutdown(self):
         """Verify SystemTrayManager.shutdown safely terminates any active rescan worker."""
         from rat.os.menu_bar import RescanWorker, SystemTrayManager
@@ -155,16 +80,6 @@ class TestCrashShield(unittest.TestCase):
             tray.rescan_worker = worker
             tray.shutdown()
             self.assertIsNone(tray.rescan_worker)
-
-    def test_schedule_window_shutdown_and_close(self):
-        """Verify ScheduleCompositorWindow handles hide and shutdown cleanly."""
-        from rat.ui.schedule_window import ScheduleCompositorWindow
-        with patch("rat.ui.schedule_window.load_club_members", return_value=[]):
-            win = ScheduleCompositorWindow()
-            win.shutdown()
-            win.deleteLater()
-            app.processEvents()
-
 
 if __name__ == "__main__":
     unittest.main()

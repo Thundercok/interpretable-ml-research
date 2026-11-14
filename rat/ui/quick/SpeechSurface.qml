@@ -3,6 +3,9 @@ import QtQuick
 // Shared visual shell. Children own reading/input; this surface runs no tools.
 Item {
     id: surface
+    Accessible.role: Accessible.Pane
+    Accessible.name: "Khung đối thoại Chuột"
+    Accessible.description: "Bề mặt hiển thị lời thoại và phản hồi của trợ lý"
     property real padding: 14
     property real cornerRadius: 16
     property real tailLength: 18
@@ -13,10 +16,11 @@ Item {
     property real heldWidth: 0
     property real heldHeight: 0
     property point anchorPoint: Qt.point(width + 24, height / 2)
-    property color paperColor: "#fdfefb"
-    property color edgeColor: "#dce3d4"
-    property color inkColor: "#2c302a"
-    property color selectionColor: "#dbe7d1"
+    property DeskTheme deskTheme: DeskTheme {}
+    property color paperColor: deskTheme.inputColor
+    property color edgeColor: deskTheme.speechEdge
+    property color inkColor: deskTheme.ink
+    property color selectionColor: deskTheme.speechSelection
     readonly property bool hasTail: tailEnabled && (anchorPoint.x < 0 || anchorPoint.x > width || anchorPoint.y < 0 || anchorPoint.y > height)
     readonly property string tailSide: anchorPoint.x < 0 ? "left" : anchorPoint.x > width ? "right" : anchorPoint.y < 0 ? "top" : "bottom"
     readonly property point tailBase: {

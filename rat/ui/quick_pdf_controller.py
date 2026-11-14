@@ -45,6 +45,7 @@ from rat.ui.answer_presentation import (
 from rat.ui.assistant_worker import create_execution_worker
 from rat.ui.pdf_snapshot_provider import PdfSnapshotRenderer
 from rat.ui.reading_coordinator import ReadingDeskCoordinator
+from rat.ui.quick_navigation_stack import QuickNavigationStack
 from rat.kernel.contracts import Artifact, SourceEvidence
 
 logger = logging.getLogger("rat.ui.quick_pdf_controller")
@@ -293,9 +294,12 @@ class QuickPDFController(QObject):
         self._pre_finder_status: Optional[str] = None
         self._auto_read_on_select: bool = False
         self._page_return_view: str = "none"
+        self._nav_stack: QuickNavigationStack = QuickNavigationStack()
         self._active_search_hit: Optional[Dict[str, Any]] = None
         self._cached_matched_info: Optional[Dict[str, Any]] = None
         self._cached_matched_key: Optional[tuple] = None
+        self._translator = None
+        self._index_status: str = ""
         self._index_timer = QTimer(self)
         self._index_timer.setInterval(1500)
         self._index_timer.timeout.connect(self.refresh_index_progress)
@@ -508,6 +512,7 @@ class QuickPDFController(QObject):
             "matchedSnippetTruncated": matched_info["truncated"],
             "matchedQuery": (self._search.get("query", "") if self._search else ""),
             "sourceKind": "search_hit" if self._active_search_hit else ("citation" if self._page_return_view == "answer" else "direct"),
+            "pageReturnView": self._page_return_view,
             "canCopy": view == "page" or (view == "answer" and bool(self._last_assistant_answer)),
             "canBack": bool(self._search) and self._page_return_view == "search" and view in ("page", "error"),
             "canBackToAnswer": (view == "page" and self._page_return_view == "answer" and bool(self._last_assistant_answer or self._last_user_query)),
@@ -518,6 +523,7 @@ class QuickPDFController(QObject):
             "finderHits": list(self._finder_hits),
             "finderQuery": self._finder_query,
             "finderFeedback": self._finder_feedback,
+            "indexStatus": self._index_status,
             "readingSession": self._reading_coordinator.snapshot_data,
             "activeNote": self._reading_coordinator.active_note,
             "installedApps": list(self._cached_apps_list),
@@ -669,7 +675,7 @@ class QuickPDFController(QObject):
             return
         self._view = "answer"
         self._page_return_view = "none"
-        self._expanded = True
+        self._expanded = bool(self._expanded)
         self._unread = False
         self._status = "Đã trả lời · có thể hỏi tiếp" if self._last_assistant_answer else "Đã dừng yêu cầu"
         self.changed.emit()
@@ -824,7 +830,7 @@ class QuickPDFController(QObject):
         if self._search and not self._request:
             self._view = "search"
             self._error = ""
-            self._expanded = True
+            self._expanded = bool(self._expanded)
             self._unread = False
             self._status = self._search_summary(self._search)
             self.changed.emit()
@@ -1532,7 +1538,11 @@ class QuickPDFController(QObject):
 
     @pyqtSlot()
     def startIndexing(self, reason: str = "") -> bool:
-        if self._closed or self.snapshot.get("busy"):
+        if self._closed:
+            return False
+        if self.snapshot.get("busy"):
+            if not reason:
+                QTimer.singleShot(2000, lambda: self.startIndexing(reason))
             return False
         now = time.monotonic()
         if reason == "panel_open" and now - self._last_index_time < 30.0:
@@ -1548,11 +1558,80 @@ class QuickPDFController(QObject):
             self.refresh_index_progress()
         return started
 
+    @pyqtSlot()
+    def openSettings(self) -> None:
+        if self._view != "settings":
+            self._navigation_stack.push(self._view)
+            self._view = "settings"
+            self.changed.emit()
+
+    @pyqtSlot()
+    def closeSettings(self) -> None:
+        if self._view == "settings":
+            prev = self._navigation_stack.pop() if self._navigation_stack else "none"
+            self._view = prev or "none"
+            self.changed.emit()
+
+    @pyqtSlot(result="QVariantList")
+    def getIndexedFolders(self) -> list:
+        from rat.config import config
+        return list(getattr(config, "indexed_directories", []))
+
+    @pyqtSlot(str)
+    def addIndexedFolder(self, path: str) -> None:
+        if not path:
+            return
+        from rat.config import config
+        clean = path.replace("file://", "").strip()
+        dirs = list(getattr(config, "indexed_directories", []))
+        if clean not in dirs:
+            dirs.append(clean)
+            config.indexed_directories = dirs
+            try:
+                config.save()
+            except Exception:
+                pass
+            self.changed.emit()
+
+    @pyqtSlot(int)
+    def removeIndexedFolder(self, index: int) -> None:
+        from rat.config import config
+        dirs = list(getattr(config, "indexed_directories", []))
+        if 0 <= index < len(dirs):
+            dirs.pop(index)
+            config.indexed_directories = dirs
+            try:
+                config.save()
+            except Exception:
+                pass
+            self.changed.emit()
+
+    @pyqtSlot(QUrl, result=str)
+    def localFolderPath(self, url: QUrl) -> str:
+        if not url:
+            return ""
+        if isinstance(url, str):
+            url = QUrl(url)
+        return url.toLocalFile()
+
     def refresh_index_progress(self):
-        state = self._finder_semantic.progress()
-        busy = state.get("state") in ("scanning", "indexing")
+        state = self._finder_semantic.progress() if hasattr(self, "_finder_semantic") and self._finder_semantic else {}
+        st = state.get("state", "idle")
+        busy = st in ("scanning", "indexing")
         if not busy:
             self._index_timer.stop()
+
+        new_status = ""
+        if st == "scanning":
+            new_status = "Đang xem qua các thư mục…"
+        elif st == "indexing":
+            done = state.get("done", 0)
+            total = state.get("total", 0)
+            new_status = f"Đang lập chỉ mục {done}/{total} tệp…"
+
+        if new_status != self._index_status:
+            self._index_status = new_status
+            self.changed.emit()
 
     @pyqtSlot(str)
     def onComposerTextChanged(self, text: str):
@@ -1942,18 +2021,35 @@ class QuickPDFController(QObject):
         """Translates text snippet on the full app's translation path using SnippetTranslator."""
         if not text or not text.strip():
             return ""
-        from rat.engine.snippet_translation import SnippetTranslator
-        translator = SnippetTranslator()
-        res = translator.translate(text, source=source_lang, target=target_lang)
-        translated = res.get("text", "")
-        if translated:
-            self._last_user_query = f"Dịch sang {target_lang}"
-            self._last_assistant_answer = translated
-            self._view = "answer"
-            self._status = f"Đã dịch từ {res.get('source_language', source_lang)} sang {target_lang}"
-            self._expanded = True
+        if len(text) > 8000:
+            self._status = "Đoạn này dài quá, Chuột dịch tối đa 8.000 ký tự một lần."
             self.changed.emit()
-        return translated
+            return ""
+        if self._translator is None:
+            from rat.engine.snippet_translation import SnippetTranslator
+            self._translator = SnippetTranslator()
+
+        def run_translation():
+            try:
+                res = self._translator.translate(text, source=source_lang, target=target_lang)
+                translated = res.get("text", "")
+                if translated:
+                    self._last_user_query = f"Dịch sang {target_lang}"
+                    self._last_assistant_answer = translated
+                    self._view = "answer"
+                    src_name = "Tiếng Anh" if res.get("source_language", source_lang) == "en" else res.get("source_language", source_lang)
+                    tgt_name = "Tiếng Việt" if target_lang == "vi" else target_lang
+                    self._status = f"Đã dịch: {src_name} → {tgt_name}"
+                    self._expanded = True
+                    self.changed.emit()
+            except Exception as exc:
+                self._status = f"Chuột chưa dịch được: {exc}"
+                self.changed.emit()
+
+        thread = threading.Thread(target=run_translation, daemon=True)
+        self._last_translation_thread = thread
+        thread.start()
+        return ""
 
     def _get_clipboard_change_count(self) -> int:
         if sys.platform != "darwin":
